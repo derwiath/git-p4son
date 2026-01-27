@@ -180,6 +180,30 @@ Examples:
         metavar='ACTION'
     )
 
+    # Review new subcommand
+    review_new_parser = review_subparsers.add_parser(
+        'new',
+        help='Create new changelist and Swarm review',
+        description='Create a new changelist with changes since base branch and create a Swarm review'
+    )
+    review_new_parser.add_argument(
+        '-m', '--message',
+        required=True,
+        help='Changelist description message'
+    )
+    review_new_parser.add_argument(
+        '-b', '--base-branch',
+        default='HEAD~1',
+        help='Base branch where p4 and git are in sync. Finds common ancestor with '
+             'current branch and includes files that changed on base branch but not on '
+             'current branch. Default is HEAD~1'
+    )
+    review_new_parser.add_argument(
+        '-n', '--dry-run',
+        action='store_true',
+        help='Pretend and print all commands, but do not execute'
+    )
+
     # Review update subcommand
     review_update_parser = review_subparsers.add_parser(
         'update',
