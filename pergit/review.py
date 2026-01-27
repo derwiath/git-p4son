@@ -7,7 +7,7 @@ import re
 import subprocess
 import sys
 from .common import ensure_workspace, run
-from .changelist import create_changelist
+from .changelist import create_changelist, update_changelist
 from .edit import get_local_git_changes, include_changes_in_changelist
 
 
@@ -190,6 +190,13 @@ def review_update_command(args: argparse.Namespace) -> int:
         print('Invalid changelist number: %s' %
               args.changelist, file=sys.stderr)
         return 1
+
+    # Optionally update the changelist description
+    if args.description:
+        returncode = update_changelist(
+            args.changelist, args.base_branch, workspace_dir, dry_run=args.dry_run)
+        if returncode != 0:
+            return returncode
 
     # Open changed files for edit in the changelist
     returncode = open_changes_for_edit(

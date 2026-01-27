@@ -222,6 +222,11 @@ Examples:
              'current branch. Default is HEAD~1'
     )
     review_update_parser.add_argument(
+        '-d', '--description',
+        action='store_true',
+        help='Update the changelist description with the current commit list'
+    )
+    review_update_parser.add_argument(
         '-n', '--dry-run',
         action='store_true',
         help='Pretend and print all commands, but do not execute'
