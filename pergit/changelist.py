@@ -106,7 +106,8 @@ def get_changelist_spec(changelist_nr: str, workspace_dir: str) -> tuple[int, st
             return (result.returncode, None)
         return (0, result.stdout)
     except Exception as e:
-        print(f'Failed to get changelist {changelist_nr}: {e}', file=sys.stderr)
+        print(
+            f'Failed to get changelist {changelist_nr}: {e}', file=sys.stderr)
         return (1, None)
 
 
@@ -265,12 +266,14 @@ def update_changelist(changelist_nr: str, base_branch: str, workspace_dir: str, 
             text=True
         )
         if result.returncode != 0:
-            print(f'Failed to update changelist {changelist_nr}', file=sys.stderr)
+            print(
+                f'Failed to update changelist {changelist_nr}', file=sys.stderr)
             print(result.stderr, file=sys.stderr)
             return result.returncode
         return 0
     except Exception as e:
-        print(f'Failed to update changelist {changelist_nr}: {e}', file=sys.stderr)
+        print(
+            f'Failed to update changelist {changelist_nr}: {e}', file=sys.stderr)
         return 1
 
 

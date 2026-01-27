@@ -167,6 +167,7 @@ Examples:
 
     return parser
 
+
 def run_command(args: argparse.Namespace) -> int:
     if args.command == 'sync':
         return sync_command(args)
@@ -194,9 +195,9 @@ def main() -> int:
         exit_code = run_command(args)
 
         if exit_code == 0 and args.sleep is not None:
-             seconds = int(args.sleep)
-             print(f'Sleeping for {seconds} seconds')
-             time.sleep(seconds)
+            seconds = int(args.sleep)
+            print(f'Sleeping for {seconds} seconds')
+            time.sleep(seconds)
 
         return exit_code
     except KeyboardInterrupt:
