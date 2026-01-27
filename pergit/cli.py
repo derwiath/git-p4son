@@ -28,6 +28,7 @@ Examples:
   pergit edit 12345 --dry-run # Preview what would be opened for edit
   pergit changelist new -m "Fix bug" # Create new changelist with description
   pergit changelist new -m "Fix bug" -b main # Create changelist with commits since main
+  pergit changelist update 12345 -b main # Update CL 12345 commit list
   pergit list-changes        # List commit subjects since HEAD~1
   pergit list-changes --base-branch main # List commit subjects since main branch
         """
@@ -127,6 +128,29 @@ Examples:
         '-n', '--dry-run',
         action='store_true',
         help='Pretend and print what would be created, but do not execute'
+    )
+
+    # changelist update
+    changelist_update_parser = changelist_subparsers.add_parser(
+        'update',
+        help='Update the commit list in an existing changelist',
+        description='Update an existing Perforce changelist description by '
+        'replacing the enumerated commit list with the current commits '
+        'since the base branch. The user message is preserved.'
+    )
+    changelist_update_parser.add_argument(
+        'changelist',
+        help='Changelist number to update'
+    )
+    changelist_update_parser.add_argument(
+        '-b', '--base-branch',
+        default='HEAD~1',
+        help='Base branch for enumerating commits. Default is HEAD~1'
+    )
+    changelist_update_parser.add_argument(
+        '-n', '--dry-run',
+        action='store_true',
+        help='Pretend and print what would be updated, but do not execute'
     )
 
     # List-changes subcommand
