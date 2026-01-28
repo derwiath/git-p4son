@@ -17,7 +17,6 @@ from pergit.sync import (
     p4_is_workspace_clean,
     p4_sync,
     parse_p4_sync_line,
-    readable_file_size,
     sync_command,
 )
 from tests.helpers import make_run_result
@@ -66,19 +65,6 @@ class TestGetWritableFiles(unittest.TestCase):
 
     def test_empty_stderr(self):
         self.assertEqual(get_writable_files([]), [])
-
-
-class TestReadableFileSize(unittest.TestCase):
-    def test_bytes(self):
-        self.assertEqual(readable_file_size(100), '100.0B')
-
-    def test_kibibytes(self):
-        result = readable_file_size(2048)
-        self.assertEqual(result, '2.0KiB')
-
-    def test_mebibytes(self):
-        result = readable_file_size(1048576)
-        self.assertEqual(result, '1.0MiB')
 
 
 class TestGitIsWorkspaceClean(unittest.TestCase):
@@ -250,10 +236,8 @@ class TestGetFileCountToSync(unittest.TestCase):
 class TestP4SyncOutputProcessor(unittest.TestCase):
     def test_tracks_added_file(self):
         processor = P4SyncOutputProcessor(10)
-        with mock.patch('pergit.sync.get_file_size', return_value=1024):
-            processor('//depot/foo.txt#1 - added as /ws/foo.txt', sys.stdout)
+        processor('//depot/foo.txt#1 - added as /ws/foo.txt', sys.stdout)
         self.assertEqual(processor.stats['add'].count, 1)
-        self.assertEqual(processor.stats['add'].total_size, 1024)
         self.assertEqual(processor.synced_file_count, 1)
 
     def test_tracks_deleted_file(self):

@@ -49,14 +49,6 @@ def parse_p4_sync_line(line: str) -> tuple[str | None, str | None]:
     return (None, None)
 
 
-def get_file_size(filename: str) -> int:
-    """Get the size of a file in bytes."""
-    if not os.path.isfile(filename):
-        return 0
-    file_stats = os.stat(filename)
-    return file_stats.st_size if file_stats else 0
-
-
 def green_text(s: str) -> str:
     """Format text in green color."""
     return f'\033[92m{s}\033[0m'
@@ -67,7 +59,6 @@ class SyncStats:
 
     def __init__(self) -> None:
         self.count: int = 0
-        self.total_size: int = 0
 
 
 def readable_file_size(num: float, suffix: str = "B") -> str:
@@ -112,11 +103,6 @@ class P4SyncOutputProcessor:
                                                self.synced_file_count,
                                                self.file_count_to_sync))
 
-        if mode in ['add', 'upd', 'clb']:
-            size = get_file_size(filename)
-            self.stats[mode].total_size += size
-            print('{}size: {}'.format(indentation, readable_file_size(size)))
-
         print('{}sync stats {}'.format(indentation, self.get_sync_stats()))
 
     def get_sync_stats(self) -> str:
@@ -126,14 +112,8 @@ class P4SyncOutputProcessor:
 
         synced_count = self.stats['add'].count + \
             self.stats['upd'].count - self.stats['clb'].count
-        synced_size = self.stats['add'].total_size + \
-            self.stats['upd'].total_size - self.stats['clb'].total_size
 
-        return 'file count {}, size {}, time {}, average speed {} / sec'.format(
-            synced_count,
-            readable_file_size(synced_size),
-            duration,
-            readable_file_size(synced_size/duration_sec))
+        return f'file count {synced_count}, time {duration}'
 
     def print_stats(self) -> None:
         """Print final sync statistics."""
@@ -143,7 +123,6 @@ class P4SyncOutputProcessor:
         for mode, stat in self.stats.items():
             print(f'{mode}')
             print(f'  count: {stat.count}')
-            print('  size : {}'.format(readable_file_size(stat.total_size)))
 
 
 def p4_force_sync_file(changelist: int, filename: str, workspace_dir: str) -> int:
