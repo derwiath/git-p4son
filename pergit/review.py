@@ -10,7 +10,7 @@ import sys
 from .common import ensure_workspace, run
 from .changelist import create_changelist, update_changelist
 from .changelist_store import resolve_changelist, save_changelist_alias
-from .edit import get_local_git_changes, include_changes_in_changelist
+from .edit import open_changes_for_edit
 
 
 def p4_shelve_changelist(changelist: str, workspace_dir: str, dry_run: bool = False) -> int:
@@ -32,27 +32,6 @@ def p4_shelve_changelist(changelist: str, workspace_dir: str, dry_run: bool = Fa
         print('Failed to shelve changelist', file=sys.stderr)
 
     return res.returncode
-
-
-def open_changes_for_edit(base_branch: str, changelist: str, workspace_dir: str, dry_run: bool = False) -> int:
-    """
-    Get local git changes and open them for edit in a Perforce changelist.
-
-    Args:
-        base_branch: The base branch to compare against
-        changelist: The changelist number to add files to
-        workspace_dir: The workspace directory
-        dry_run: If True, don't actually execute commands
-
-    Returns:
-        Exit code (0 for success, non-zero for failure)
-    """
-    returncode, changes = get_local_git_changes(base_branch, workspace_dir)
-    if returncode != 0:
-        print('Failed to get a list of changed files', file=sys.stderr)
-        return returncode
-
-    return include_changes_in_changelist(changes, changelist, workspace_dir, dry_run)
 
 
 def add_review_keyword_to_changelist(changelist: str, workspace_dir: str, dry_run: bool = False) -> tuple[int, bool]:
@@ -165,7 +144,7 @@ def review_new_command(args: argparse.Namespace) -> int:
 
     # Open changed files for edit in the new changelist
     returncode = open_changes_for_edit(
-        args.base_branch, changelist, workspace_dir, args.dry_run)
+        changelist, args.base_branch, workspace_dir, args.dry_run)
     if returncode != 0:
         return returncode
 
@@ -216,7 +195,7 @@ def review_update_command(args: argparse.Namespace) -> int:
 
     # Open changed files for edit in the changelist
     returncode = open_changes_for_edit(
-        args.base_branch, changelist, workspace_dir, args.dry_run)
+        changelist, args.base_branch, workspace_dir, args.dry_run)
     if returncode != 0:
         return returncode
 

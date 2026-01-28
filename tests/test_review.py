@@ -5,7 +5,6 @@ from unittest import mock
 
 from pergit.review import (
     p4_shelve_changelist,
-    open_changes_for_edit,
     add_review_keyword_to_changelist,
     review_new_command,
     review_update_command,
@@ -40,23 +39,6 @@ class TestP4ShelveChangelist(unittest.TestCase):
             ['p4', 'shelve', '-f', '-Af', '-c', '100'],
             cwd='/ws', dry_run=True,
         )
-
-
-class TestOpenChangesForEdit(unittest.TestCase):
-    @mock.patch('pergit.review.include_changes_in_changelist', return_value=0)
-    @mock.patch('pergit.review.get_local_git_changes')
-    def test_success(self, mock_get_changes, mock_include):
-        mock_changes = mock.Mock()
-        mock_get_changes.return_value = (0, mock_changes)
-        rc = open_changes_for_edit('HEAD~1', '100', '/ws')
-        self.assertEqual(rc, 0)
-        mock_include.assert_called_once_with(mock_changes, '100', '/ws', False)
-
-    @mock.patch('pergit.review.get_local_git_changes')
-    def test_get_changes_failure(self, mock_get_changes):
-        mock_get_changes.return_value = (1, None)
-        rc = open_changes_for_edit('HEAD~1', '100', '/ws')
-        self.assertEqual(rc, 1)
 
 
 SPEC_LINES_WITHOUT_REVIEW = [
@@ -137,7 +119,7 @@ class TestReviewNewCommand(unittest.TestCase):
         self.assertEqual(rc, 0)
         mock_create.assert_called_once_with(
             'New review', 'HEAD~1', '/ws', dry_run=False)
-        mock_open.assert_called_once_with('HEAD~1', '500', '/ws', False)
+        mock_open.assert_called_once_with('500', 'HEAD~1', '/ws', False)
         mock_review.assert_called_once_with('500', '/ws', dry_run=False)
         mock_shelve.assert_called_once_with('500', '/ws', dry_run=False)
 

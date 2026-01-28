@@ -7,6 +7,7 @@ from pergit.edit import (
     LocalChanges,
     check_file_status,
     find_common_ancestor,
+    open_changes_for_edit,
     get_local_git_changes,
     include_changes_in_changelist,
     edit_command,
@@ -197,6 +198,24 @@ class TestIncludeChangesInChangelist(unittest.TestCase):
             ['p4', 'add', '-c', '100', 'new.txt'],
             cwd='/ws', dry_run=True,
         )
+
+
+class TestOpenChangesForEdit(unittest.TestCase):
+    @mock.patch('pergit.edit.include_changes_in_changelist', return_value=0)
+    @mock.patch('pergit.edit.get_local_git_changes')
+    @mock.patch('pergit.edit.ensure_workspace', return_value='/ws')
+    def test_success(self, mock_ensure, mock_get_changes, mock_include):
+        mock_changes = mock.Mock()
+        mock_get_changes.return_value = (0, mock_changes)
+        rc = open_changes_for_edit('100', 'HEAD~1', '/ws')
+        self.assertEqual(rc, 0)
+        mock_include.assert_called_once_with(mock_changes, '100', '/ws', False)
+
+    @mock.patch('pergit.edit.get_local_git_changes')
+    def test_get_changes_failure(self, mock_get_changes):
+        mock_get_changes.return_value = (1, None)
+        rc = open_changes_for_edit('100', 'HEAD~1', '/ws')
+        self.assertEqual(rc, 1)
 
 
 class TestEditCommand(unittest.TestCase):

@@ -146,14 +146,29 @@ def edit_command(args: argparse.Namespace) -> int:
     if changelist is None:
         return 1
 
-    returncode, changes = get_local_git_changes(
-        args.base_branch, workspace_dir)
+    return open_changes_for_edit(changelist, args.base_branch, workspace_dir,
+                                 args.dry_run)
+
+
+def open_changes_for_edit(changelist: str, base_branch: str, workspace_dir: str, dry_run: bool = False) -> int:
+    """
+    Get local git changes and open them for edit in a Perforce changelist.
+
+    Args:
+        base_branch: The base branch to compare against
+        changelist: The changelist number to add files to
+        workspace_dir: The workspace directory
+        dry_run: If True, don't actually execute commands
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    returncode, changes = get_local_git_changes(base_branch, workspace_dir)
     if returncode != 0:
         print('Failed to get a list of changed files', file=sys.stderr)
         return returncode
 
-    # Process all changes in the changelist
-    return include_changes_in_changelist(changes, changelist, workspace_dir, args.dry_run)
+    return include_changes_in_changelist(changes, changelist, workspace_dir, dry_run)
 
 
 def include_changes_in_changelist(changes: LocalChanges, changelist: str, workspace_dir: str, dry_run: bool = False) -> int:
