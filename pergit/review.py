@@ -3,11 +3,13 @@ Review command implementation for pergit.
 """
 
 import argparse
+import os
 import re
 import subprocess
 import sys
 from .common import ensure_workspace, run
 from .changelist import create_changelist, update_changelist
+from .changelist_store import resolve_changelist, save_changelist_alias
 from .edit import get_local_git_changes, include_changes_in_changelist
 
 
@@ -141,6 +143,15 @@ def review_new_command(args: argparse.Namespace) -> int:
     """
     workspace_dir = ensure_workspace()
 
+    # Check alias availability before creating the changelist
+    if args.alias and not args.dry_run:
+        alias_path = os.path.join(
+            workspace_dir, '.pergit', 'changelists', args.alias)
+        if os.path.exists(alias_path) and not args.force:
+            print(f'Alias "{args.alias}" already exists (use -f/--force to overwrite)',
+                  file=sys.stderr)
+            return 1
+
     # Create new changelist
     returncode, changelist = create_changelist(
         args.message, args.base_branch, workspace_dir, dry_run=args.dry_run)
@@ -150,6 +161,11 @@ def review_new_command(args: argparse.Namespace) -> int:
 
     if not args.dry_run:
         print(f"Created new changelist: {changelist}")
+        if args.alias:
+            if not save_changelist_alias(args.alias, changelist,
+                                         workspace_dir, force=args.force):
+                return 1
+            print(f'Saved alias "{args.alias}" -> {changelist}')
 
     # Open changed files for edit in the new changelist
     returncode = open_changes_for_edit(
@@ -186,31 +202,35 @@ def review_update_command(args: argparse.Namespace) -> int:
     """
     workspace_dir = ensure_workspace()
 
-    if not args.changelist.isdigit():
+    changelist = resolve_changelist(args.changelist, workspace_dir)
+    if changelist is None:
+        return 1
+
+    if not changelist.isdigit():
         print('Invalid changelist number: %s' %
-              args.changelist, file=sys.stderr)
+              changelist, file=sys.stderr)
         return 1
 
     # Optionally update the changelist description
     if args.description:
         returncode = update_changelist(
-            args.changelist, args.base_branch, workspace_dir, dry_run=args.dry_run)
+            changelist, args.base_branch, workspace_dir, dry_run=args.dry_run)
         if returncode != 0:
             return returncode
 
     # Open changed files for edit in the changelist
     returncode = open_changes_for_edit(
-        args.base_branch, args.changelist, workspace_dir, args.dry_run)
+        args.base_branch, changelist, workspace_dir, args.dry_run)
     if returncode != 0:
         return returncode
 
     # Re-shelve the changelist to update the review
     returncode = p4_shelve_changelist(
-        args.changelist, workspace_dir, dry_run=args.dry_run)
+        changelist, workspace_dir, dry_run=args.dry_run)
     if returncode != 0:
         return returncode
 
-    print(f"Updated Swarm review for changelist {args.changelist}")
+    print(f"Updated Swarm review for changelist {changelist}")
 
     return 0
 

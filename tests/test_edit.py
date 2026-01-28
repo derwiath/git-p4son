@@ -201,8 +201,9 @@ class TestIncludeChangesInChangelist(unittest.TestCase):
 
 class TestEditCommand(unittest.TestCase):
     @mock.patch('pergit.edit.ensure_workspace', return_value='/ws')
+    @mock.patch('pergit.edit.resolve_changelist', return_value='100')
     @mock.patch('pergit.edit.run')
-    def test_success(self, mock_run, _mock_ws):
+    def test_success(self, mock_run, _mock_resolve, _mock_ws):
         mock_run.side_effect = [
             make_run_result(stdout=['abc123']),
             make_run_result(stdout=['A\tnew.txt']),

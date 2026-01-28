@@ -13,6 +13,7 @@ from datetime import timedelta
 from typing import IO
 
 from .common import ensure_workspace, run, run_with_output
+from .changelist_store import resolve_changelist
 
 
 def echo_output_to_stream(line: str, stream: IO[str]) -> None:
@@ -317,6 +318,13 @@ def sync_command(args: argparse.Namespace) -> int:
         print('p4 opened shows that workspace is not clean, aborting')
         return 1
     print('')
+
+    # Resolve changelist alias (skip special keywords)
+    if args.changelist.lower() not in ('latest', 'last-synced'):
+        resolved = resolve_changelist(args.changelist, workspace_dir)
+        if resolved is None:
+            return 1
+        args.changelist = resolved
 
     last_changelist = git_changelist_of_last_commit(workspace_dir)
     if args.changelist.lower() == 'last-synced':

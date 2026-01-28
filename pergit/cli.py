@@ -62,7 +62,7 @@ Examples:
     )
     sync_parser.add_argument(
         'changelist',
-        help='Changelist to sync, "latest" to sync to the latest changelist affecting the workspace, or "last-synced" to re-sync the last synced changelist'
+        help='Changelist number or named alias to sync, "latest" to sync to the latest changelist affecting the workspace, or "last-synced" to re-sync the last synced changelist'
     )
     sync_parser.add_argument(
         '-f', '--force',
@@ -83,7 +83,7 @@ Examples:
     )
     edit_parser.add_argument(
         'changelist',
-        help='Changelist number to update'
+        help='Changelist number or named alias to update'
     )
     edit_parser.add_argument(
         '-b', '--base-branch',
@@ -128,9 +128,41 @@ Examples:
         help='Base branch for enumerating commits. Default is HEAD~1'
     )
     changelist_new_parser.add_argument(
+        'alias',
+        nargs='?',
+        default=None,
+        help='Optional alias name to save the new changelist number under'
+    )
+    changelist_new_parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Overwrite an existing alias file'
+    )
+    changelist_new_parser.add_argument(
         '-n', '--dry-run',
         action='store_true',
         help='Pretend and print what would be created, but do not execute'
+    )
+
+    # changelist set
+    changelist_set_parser = changelist_subparsers.add_parser(
+        'set',
+        help='Save a changelist number under a named alias',
+        description='Save a changelist number under a named alias in '
+        '.pergit/changelists/<alias>.'
+    )
+    changelist_set_parser.add_argument(
+        'changelist',
+        help='Changelist number to save'
+    )
+    changelist_set_parser.add_argument(
+        'alias',
+        help='Alias name to save the changelist number under'
+    )
+    changelist_set_parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Overwrite an existing alias file'
     )
 
     # changelist update
@@ -143,7 +175,7 @@ Examples:
     )
     changelist_update_parser.add_argument(
         'changelist',
-        help='Changelist number to update'
+        help='Changelist number or named alias to update'
     )
     changelist_update_parser.add_argument(
         '-b', '--base-branch',
@@ -199,6 +231,17 @@ Examples:
              'current branch. Default is HEAD~1'
     )
     review_new_parser.add_argument(
+        'alias',
+        nargs='?',
+        default=None,
+        help='Optional alias name to save the new changelist number under'
+    )
+    review_new_parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Overwrite an existing alias file'
+    )
+    review_new_parser.add_argument(
         '-n', '--dry-run',
         action='store_true',
         help='Pretend and print all commands, but do not execute'
@@ -212,7 +255,7 @@ Examples:
     )
     review_update_parser.add_argument(
         'changelist',
-        help='Changelist number to update'
+        help='Changelist number or named alias to update'
     )
     review_update_parser.add_argument(
         '-b', '--base-branch',

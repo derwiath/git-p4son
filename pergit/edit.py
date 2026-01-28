@@ -6,6 +6,7 @@ import argparse
 import re
 import sys
 from .common import ensure_workspace, run
+from .changelist_store import resolve_changelist
 
 
 class LocalChanges:
@@ -141,7 +142,9 @@ def edit_command(args: argparse.Namespace) -> int:
     """
     workspace_dir = ensure_workspace()
 
-    changelist = args.changelist
+    changelist = resolve_changelist(args.changelist, workspace_dir)
+    if changelist is None:
+        return 1
 
     returncode, changes = get_local_git_changes(
         args.base_branch, workspace_dir)

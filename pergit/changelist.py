@@ -3,10 +3,12 @@ Changelist command implementation for pergit.
 """
 
 import argparse
+import os
 import re
 import sys
 import subprocess
 from .common import ensure_workspace
+from .changelist_store import resolve_changelist, save_changelist_alias
 from .list_changes import get_enumerated_change_description_since
 
 
@@ -289,6 +291,15 @@ def changelist_new_command(args: argparse.Namespace) -> int:
     """
     workspace_dir = ensure_workspace()
 
+    # Check alias availability before creating the changelist
+    if args.alias and not args.dry_run:
+        alias_path = os.path.join(
+            workspace_dir, '.pergit', 'changelists', args.alias)
+        if os.path.exists(alias_path) and not args.force:
+            print(f'Alias "{args.alias}" already exists (use -f/--force to overwrite)',
+                  file=sys.stderr)
+            return 1
+
     returncode, changelist_number = create_changelist(
         args.message, args.base_branch, workspace_dir, dry_run=args.dry_run)
     if returncode != 0:
@@ -296,6 +307,11 @@ def changelist_new_command(args: argparse.Namespace) -> int:
 
     if not args.dry_run:
         print(f"Created changelist {changelist_number}")
+        if args.alias:
+            if not save_changelist_alias(args.alias, changelist_number,
+                                         workspace_dir, force=args.force):
+                return 1
+            print(f'Saved alias "{args.alias}" -> {changelist_number}')
 
     return 0
 
@@ -312,14 +328,42 @@ def changelist_update_command(args: argparse.Namespace) -> int:
     """
     workspace_dir = ensure_workspace()
 
+    changelist = resolve_changelist(args.changelist, workspace_dir)
+    if changelist is None:
+        return 1
+
     returncode = update_changelist(
-        args.changelist, args.base_branch, workspace_dir, dry_run=args.dry_run)
+        changelist, args.base_branch, workspace_dir, dry_run=args.dry_run)
     if returncode != 0:
         return returncode
 
     if not args.dry_run:
-        print(f"Updated changelist {args.changelist}")
+        print(f"Updated changelist {changelist}")
 
+    return 0
+
+
+def changelist_set_command(args: argparse.Namespace) -> int:
+    """
+    Execute the 'changelist set' command.
+
+    Args:
+        args: Parsed command line arguments
+
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    workspace_dir = ensure_workspace()
+
+    if not args.changelist.isdigit():
+        print(f'Invalid changelist number: {args.changelist}', file=sys.stderr)
+        return 1
+
+    if not save_changelist_alias(args.alias, args.changelist,
+                                 workspace_dir, force=args.force):
+        return 1
+
+    print(f'Saved alias "{args.alias}" -> {args.changelist}')
     return 0
 
 
@@ -337,6 +381,8 @@ def changelist_command(args: argparse.Namespace) -> int:
         return changelist_new_command(args)
     elif args.changelist_action == 'update':
         return changelist_update_command(args)
+    elif args.changelist_action == 'set':
+        return changelist_set_command(args)
     else:
         print('No changelist action specified. Use "pergit changelist -h" for help.',
               file=sys.stderr)

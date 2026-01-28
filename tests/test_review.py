@@ -135,7 +135,8 @@ class TestReviewNewCommand(unittest.TestCase):
     @mock.patch('pergit.review.ensure_workspace', return_value='/ws')
     def test_full_flow(self, _ws, mock_create, mock_open, mock_review, mock_shelve):
         args = mock.Mock(message='New review',
-                         base_branch='HEAD~1', dry_run=False)
+                         base_branch='HEAD~1', dry_run=False,
+                         alias=None, force=False)
         rc = review_new_command(args)
         self.assertEqual(rc, 0)
         mock_create.assert_called_once_with(
@@ -147,7 +148,8 @@ class TestReviewNewCommand(unittest.TestCase):
     @mock.patch('pergit.review.create_changelist', return_value=(1, None))
     @mock.patch('pergit.review.ensure_workspace', return_value='/ws')
     def test_create_failure(self, _ws, _create):
-        args = mock.Mock(message='msg', base_branch='HEAD~1', dry_run=False)
+        args = mock.Mock(message='msg', base_branch='HEAD~1', dry_run=False,
+                         alias=None, force=False)
         rc = review_new_command(args)
         self.assertEqual(rc, 1)
 
@@ -155,8 +157,9 @@ class TestReviewNewCommand(unittest.TestCase):
 class TestReviewUpdateCommand(unittest.TestCase):
     @mock.patch('pergit.review.p4_shelve_changelist', return_value=0)
     @mock.patch('pergit.review.open_changes_for_edit', return_value=0)
+    @mock.patch('pergit.review.resolve_changelist', return_value='500')
     @mock.patch('pergit.review.ensure_workspace', return_value='/ws')
-    def test_update_without_description(self, _ws, mock_open, mock_shelve):
+    def test_update_without_description(self, _ws, _resolve, mock_open, mock_shelve):
         args = mock.Mock(changelist='500', base_branch='HEAD~1',
                          dry_run=False, description=False)
         rc = review_update_command(args)
@@ -167,8 +170,9 @@ class TestReviewUpdateCommand(unittest.TestCase):
     @mock.patch('pergit.review.p4_shelve_changelist', return_value=0)
     @mock.patch('pergit.review.open_changes_for_edit', return_value=0)
     @mock.patch('pergit.review.update_changelist', return_value=0)
+    @mock.patch('pergit.review.resolve_changelist', return_value='500')
     @mock.patch('pergit.review.ensure_workspace', return_value='/ws')
-    def test_update_with_description(self, _ws, mock_update, mock_open, mock_shelve):
+    def test_update_with_description(self, _ws, _resolve, mock_update, mock_open, mock_shelve):
         args = mock.Mock(changelist='500', base_branch='HEAD~1',
                          dry_run=False, description=True)
         rc = review_update_command(args)
@@ -176,8 +180,9 @@ class TestReviewUpdateCommand(unittest.TestCase):
         mock_update.assert_called_once_with(
             '500', 'HEAD~1', '/ws', dry_run=False)
 
+    @mock.patch('pergit.review.resolve_changelist', return_value=None)
     @mock.patch('pergit.review.ensure_workspace', return_value='/ws')
-    def test_invalid_changelist(self, _ws):
+    def test_invalid_changelist(self, _ws, _resolve):
         args = mock.Mock(changelist='abc', base_branch='HEAD~1',
                          dry_run=False, description=False)
         rc = review_update_command(args)

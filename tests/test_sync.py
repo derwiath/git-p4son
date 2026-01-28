@@ -277,12 +277,13 @@ class TestSyncCommand(unittest.TestCase):
     @mock.patch('pergit.sync.git_commit', return_value=True)
     @mock.patch('pergit.sync.git_add_all_files', return_value=True)
     @mock.patch('pergit.sync.git_is_workspace_clean')
+    @mock.patch('pergit.sync.resolve_changelist', return_value='12345')
     @mock.patch('pergit.sync.p4_sync', return_value=True)
     @mock.patch('pergit.sync.git_changelist_of_last_commit', return_value=10000)
     @mock.patch('pergit.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('pergit.sync.ensure_workspace', return_value='/ws')
     def test_sync_specific_cl(self, _ws, _p4clean, _last_cl, _p4sync,
-                              mock_git_clean, _git_add, _git_commit):
+                              _resolve, mock_git_clean, _git_add, _git_commit):
         # First call: initial check (clean), second call: after sync (dirty -> add files)
         mock_git_clean.side_effect = [True, False]
         args = mock.Mock(changelist='12345', force=False)
@@ -296,23 +297,26 @@ class TestSyncCommand(unittest.TestCase):
         rc = sync_command(args)
         self.assertEqual(rc, 1)
 
+    @mock.patch('pergit.sync.resolve_changelist', return_value='100')
     @mock.patch('pergit.sync.git_is_workspace_clean', return_value=True)
     @mock.patch('pergit.sync.p4_is_workspace_clean', return_value=False)
     @mock.patch('pergit.sync.ensure_workspace', return_value='/ws')
-    def test_dirty_p4_workspace_aborts(self, _ws, _p4clean, _git_clean):
+    def test_dirty_p4_workspace_aborts(self, _ws, _p4clean, _git_clean, _resolve):
         args = mock.Mock(changelist='100', force=False)
         rc = sync_command(args)
         self.assertEqual(rc, 1)
 
+    @mock.patch('pergit.sync.resolve_changelist', return_value='100')
     @mock.patch('pergit.sync.git_changelist_of_last_commit', return_value=200)
     @mock.patch('pergit.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('pergit.sync.git_is_workspace_clean', return_value=True)
     @mock.patch('pergit.sync.ensure_workspace', return_value='/ws')
-    def test_older_cl_without_force_aborts(self, _ws, _git_clean, _p4clean, _last_cl):
+    def test_older_cl_without_force_aborts(self, _ws, _git_clean, _p4clean, _last_cl, _resolve):
         args = mock.Mock(changelist='100', force=False)
         rc = sync_command(args)
         self.assertEqual(rc, 1)
 
+    @mock.patch('pergit.sync.resolve_changelist', return_value='100')
     @mock.patch('pergit.sync.git_commit', return_value=True)
     @mock.patch('pergit.sync.git_add_all_files', return_value=True)
     @mock.patch('pergit.sync.git_is_workspace_clean')
@@ -321,18 +325,19 @@ class TestSyncCommand(unittest.TestCase):
     @mock.patch('pergit.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('pergit.sync.ensure_workspace', return_value='/ws')
     def test_older_cl_with_force_proceeds(self, _ws, _p4clean, _last_cl,
-                                          _p4sync, mock_git_clean, _add, _commit):
+                                          _p4sync, mock_git_clean, _add, _commit, _resolve):
         mock_git_clean.side_effect = [True, False]
         args = mock.Mock(changelist='100', force=True)
         rc = sync_command(args)
         self.assertEqual(rc, 0)
 
+    @mock.patch('pergit.sync.resolve_changelist', return_value='100')
     @mock.patch('pergit.sync.p4_sync', return_value=True)
     @mock.patch('pergit.sync.git_changelist_of_last_commit', return_value=100)
     @mock.patch('pergit.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('pergit.sync.git_is_workspace_clean', return_value=True)
     @mock.patch('pergit.sync.ensure_workspace', return_value='/ws')
-    def test_same_cl_is_noop(self, _ws, _git_clean, _p4clean, _last_cl, _p4sync):
+    def test_same_cl_is_noop(self, _ws, _git_clean, _p4clean, _last_cl, _p4sync, _resolve):
         args = mock.Mock(changelist='100', force=False)
         rc = sync_command(args)
         self.assertEqual(rc, 0)

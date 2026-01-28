@@ -224,7 +224,8 @@ class TestChangelistNewCommand(unittest.TestCase):
     @mock.patch('pergit.changelist.ensure_workspace', return_value='/ws')
     @mock.patch('pergit.changelist.create_changelist', return_value=(0, '500'))
     def test_success(self, mock_create, _mock_ws):
-        args = mock.Mock(message='msg', base_branch='HEAD~1', dry_run=False)
+        args = mock.Mock(message='msg', base_branch='HEAD~1', dry_run=False,
+                         alias=None, force=False)
         rc = changelist_new_command(args)
         self.assertEqual(rc, 0)
         mock_create.assert_called_once_with(
@@ -234,7 +235,8 @@ class TestChangelistNewCommand(unittest.TestCase):
 class TestChangelistUpdateCommand(unittest.TestCase):
     @mock.patch('pergit.changelist.ensure_workspace', return_value='/ws')
     @mock.patch('pergit.changelist.update_changelist', return_value=0)
-    def test_success(self, mock_update, _mock_ws):
+    @mock.patch('pergit.changelist.resolve_changelist', return_value='500')
+    def test_success(self, _mock_resolve, mock_update, _mock_ws):
         args = mock.Mock(changelist='500', base_branch='HEAD~1', dry_run=False)
         rc = changelist_update_command(args)
         self.assertEqual(rc, 0)
