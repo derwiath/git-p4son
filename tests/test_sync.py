@@ -149,7 +149,7 @@ class TestGitChangelistOfLastCommit(unittest.TestCase):
     @mock.patch('pergit.sync.run_with_output')
     def test_extracts_changelist(self, mock_rwo):
         mock_rwo.return_value = make_run_result(stdout=[
-            '"12345: p4 sync //...@12345"'
+            '12345: p4 sync //...@12345'
         ])
         result = git_changelist_of_last_commit('/ws')
         self.assertEqual(result, 12345)
