@@ -79,42 +79,39 @@ def add_review_keyword_to_changelist(changelist: str, workspace_dir: str, dry_ru
     description_end_idx = None
 
     for i, line in enumerate(lines):
-        if line.strip() == 'Description:':
+        if description_start_idx is None and line.strip() == 'Description:':
             description_start_idx = i
-        elif description_start_idx is not None and description_end_idx is None:
+        elif re.match(r'^[A-Za-z].*:$', line.strip()):
             # Description ends when we hit the next field header (non-indented line with a colon)
-            if re.match(r'^[A-Za-z].*:$', line.strip()):
-                description_end_idx = i
-                break
-
-    # If we didn't find another field header, description goes to end
-    if description_start_idx is not None and description_end_idx is None:
-        description_end_idx = len(lines)
+            description_end_idx = i
+            break
 
     # Check if #review is already in the description
     if description_start_idx is not None:
-        description_text = '\n'.join(
-            lines[description_start_idx:description_end_idx])
-        if '#review' in description_text:
-            print(f'Changelist {changelist} already has #review keyword')
-            return 0
+        # If we didn't find another field header, description goes to end
+        if description_end_idx is None:
+            description_end_idx = len(lines)
 
-    # Add #review as the last line of description
-    updated_lines = lines.copy()
-    if description_start_idx is not None:
-        # Insert #review before the empty line that ends the description
-        updated_lines.insert(description_end_idx, '\t#review')
+        for desc_line in lines[description_start_idx:description_end_idx]:
+            if '#review' in desc_line:
+                print(f'Changelist {changelist} already has #review keyword')
+                return 0
 
     # Update the changelist
     if dry_run:
         print(f"Would add #review keyword to changelist {changelist}")
         return 0
 
+    # Add #review as the last line of description
+    if description_start_idx is not None:
+        # Insert #review before the empty line that ends the description
+        lines.insert(description_end_idx, '\t#review')
+
     try:
         result = subprocess.run(
             ['p4', 'change', '-i'],
             cwd=workspace_dir,
-            input='\n'.join(updated_lines),
+            input='\n'.join(lines),
             capture_output=True,
             text=True
         )
