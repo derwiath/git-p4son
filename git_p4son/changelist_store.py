@@ -89,3 +89,51 @@ def resolve_changelist(value: str, workspace_dir: str) -> str | None:
     if value.isdigit():
         return value
     return load_changelist_alias(value, workspace_dir)
+
+
+def list_changelist_aliases(workspace_dir: str) -> list[tuple[str, str]]:
+    """
+    Return a list of all changelist aliases and their values.
+
+    Args:
+        workspace_dir: The workspace root directory
+
+    Returns:
+        Sorted list of (alias_name, changelist_number) tuples.
+    """
+    changelists_dir = _changelists_dir(workspace_dir)
+
+    if not os.path.isdir(changelists_dir):
+        return []
+
+    aliases = []
+    for name in os.listdir(changelists_dir):
+        alias_path = os.path.join(changelists_dir, name)
+        if os.path.isfile(alias_path):
+            with open(alias_path, 'r') as f:
+                content = f.read().strip()
+            if content:
+                aliases.append((name, content))
+
+    return sorted(aliases, key=lambda x: x[0])
+
+
+def delete_changelist_alias(name: str, workspace_dir: str) -> bool:
+    """
+    Delete a changelist alias file.
+
+    Args:
+        name: The alias name to delete
+        workspace_dir: The workspace root directory
+
+    Returns:
+        True on success, False if not found
+    """
+    alias_path = os.path.join(_changelists_dir(workspace_dir), name)
+
+    if not os.path.exists(alias_path):
+        print(f'No changelist alias found: {name}', file=sys.stderr)
+        return False
+
+    os.remove(alias_path)
+    return True

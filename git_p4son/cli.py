@@ -11,6 +11,7 @@ from .edit import edit_command
 from .changelist import changelist_command
 from .list_changes import list_changes_command
 from .review import review_command
+from .alias import alias_command
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -144,27 +145,6 @@ Examples:
         help='Pretend and print what would be created, but do not execute'
     )
 
-    # changelist set
-    changelist_set_parser = changelist_subparsers.add_parser(
-        'set',
-        help='Save a changelist number under a named alias',
-        description='Save a changelist number under a named alias in '
-        '.git-p4son/changelists/<alias>.'
-    )
-    changelist_set_parser.add_argument(
-        'changelist',
-        help='Changelist number to save'
-    )
-    changelist_set_parser.add_argument(
-        'alias',
-        help='Alias name to save the changelist number under'
-    )
-    changelist_set_parser.add_argument(
-        '-f', '--force',
-        action='store_true',
-        help='Overwrite an existing alias file'
-    )
-
     # changelist update
     changelist_update_parser = changelist_subparsers.add_parser(
         'update',
@@ -275,6 +255,65 @@ Examples:
         help='Pretend and print all commands, but do not execute'
     )
 
+    # Alias subcommand
+    alias_parser = subparsers.add_parser(
+        'alias',
+        help='Manage changelist aliases',
+        description='Manage changelist aliases stored in .git-p4son/changelists/'
+    )
+    alias_subparsers = alias_parser.add_subparsers(
+        dest='alias_action',
+        help='Available alias actions',
+        metavar='ACTION'
+    )
+
+    # alias list
+    alias_subparsers.add_parser(
+        'list',
+        help='List all aliases and their changelist numbers',
+        description='List all changelist aliases stored in .git-p4son/changelists/'
+    )
+
+    # alias set
+    alias_set_parser = alias_subparsers.add_parser(
+        'set',
+        help='Save a changelist number under a named alias',
+        description='Save a changelist number under a named alias in '
+        '.git-p4son/changelists/<alias>'
+    )
+    alias_set_parser.add_argument(
+        'changelist',
+        help='Changelist number to save'
+    )
+    alias_set_parser.add_argument(
+        'alias',
+        help='Alias name to save the changelist number under'
+    )
+    alias_set_parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Overwrite an existing alias file'
+    )
+
+    # alias delete
+    alias_delete_parser = alias_subparsers.add_parser(
+        'delete',
+        help='Delete a changelist alias',
+        description='Delete a changelist alias from .git-p4son/changelists/'
+    )
+    alias_delete_parser.add_argument(
+        'alias',
+        help='Alias name to delete'
+    )
+
+    # alias clean
+    alias_subparsers.add_parser(
+        'clean',
+        help='Interactive cleanup of changelist aliases',
+        description='Interactively review and delete changelist aliases with '
+        'yes/no/all/quit prompts'
+    )
+
     return parser
 
 
@@ -289,6 +328,8 @@ def run_command(args: argparse.Namespace) -> int:
         return list_changes_command(args)
     elif args.command == 'review':
         return review_command(args)
+    elif args.command == 'alias':
+        return alias_command(args)
     else:
         print(f'Unknown command: {args.command}', file=sys.stderr)
         return 1

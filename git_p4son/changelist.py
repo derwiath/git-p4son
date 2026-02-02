@@ -343,30 +343,6 @@ def changelist_update_command(args: argparse.Namespace) -> int:
     return 0
 
 
-def changelist_set_command(args: argparse.Namespace) -> int:
-    """
-    Execute the 'changelist set' command.
-
-    Args:
-        args: Parsed command line arguments
-
-    Returns:
-        Exit code (0 for success, non-zero for failure)
-    """
-    workspace_dir = ensure_workspace()
-
-    if not args.changelist.isdigit():
-        print(f'Invalid changelist number: {args.changelist}', file=sys.stderr)
-        return 1
-
-    if not save_changelist_alias(args.alias, args.changelist,
-                                 workspace_dir, force=args.force):
-        return 1
-
-    print(f'Saved alias "{args.alias}" -> {args.changelist}')
-    return 0
-
-
 def changelist_command(args: argparse.Namespace) -> int:
     """
     Dispatch changelist subcommands.
@@ -381,8 +357,6 @@ def changelist_command(args: argparse.Namespace) -> int:
         return changelist_new_command(args)
     elif args.changelist_action == 'update':
         return changelist_update_command(args)
-    elif args.changelist_action == 'set':
-        return changelist_set_command(args)
     else:
         print('No changelist action specified. Use "git-p4son changelist -h" for help.',
               file=sys.stderr)
