@@ -73,7 +73,7 @@ git commit -m "Initial commit for CL 123"
 
 ## Usage
 
-git-p4son provides five commands: `sync`, `edit`, `changelist`, `list-changes`, and `review`.
+git-p4son provides six commands: `sync`, `edit`, `changelist`, `list-changes`, `review`, and `alias`.
 
 To see help for any command, use `-h`:
 
@@ -156,26 +156,6 @@ git p4son changelist new -m <message> [--base-branch BASE_BRANCH] [alias] [--for
 git p4son changelist new -m "Fix login bug"
 git p4son changelist new -m "Add feature" -b main
 git p4son changelist new -m "Fix bug" myalias
-```
-
-#### changelist set
-
-Save a changelist number under a named alias in `.git-p4son/changelists/<alias>`:
-
-```sh
-git p4son changelist set <changelist> <alias> [--force]
-```
-
-**Arguments:**
-- `changelist`: Changelist number to save
-- `alias`: Alias name to save the changelist number under
-
-**Options:**
-- `-f, --force`: Overwrite an existing alias file
-
-**Examples:**
-```sh
-git p4son changelist set 12345 myfeature
 ```
 
 #### changelist update
@@ -265,6 +245,79 @@ git p4son review update <changelist> [--base-branch BASE_BRANCH] [--description]
 ```sh
 git p4son review update 12345
 git p4son review update myalias -d
+```
+
+### Alias Command
+
+Manage changelist aliases stored in `.git-p4son/changelists/`.
+
+#### alias list
+
+List all aliases and their changelist numbers:
+
+```sh
+git p4son alias list
+```
+
+**Examples:**
+```sh
+git p4son alias list
+```
+
+#### alias set
+
+Save a changelist number under a named alias:
+
+```sh
+git p4son alias set <changelist> <alias> [--force]
+```
+
+**Arguments:**
+- `changelist`: Changelist number to save
+- `alias`: Alias name to save the changelist number under
+
+**Options:**
+- `-f, --force`: Overwrite an existing alias file
+
+**Examples:**
+```sh
+git p4son alias set 12345 myfeature
+git p4son alias set 67890 myfeature -f
+```
+
+#### alias delete
+
+Delete a changelist alias:
+
+```sh
+git p4son alias delete <alias>
+```
+
+**Arguments:**
+- `alias`: Alias name to delete
+
+**Examples:**
+```sh
+git p4son alias delete myfeature
+```
+
+#### alias clean
+
+Interactively review and delete changelist aliases:
+
+```sh
+git p4son alias clean
+```
+
+This command iterates through each alias, displays it, and prompts for action:
+- `y` (yes): Delete this alias
+- `n` (no): Keep this alias
+- `a` (all): Delete this and all remaining aliases
+- `q` (quit): Stop and keep remaining aliases
+
+**Examples:**
+```sh
+git p4son alias clean
 ```
 
 ## Usage Example
