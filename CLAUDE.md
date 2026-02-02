@@ -13,7 +13,7 @@ git-p4son is a Python CLI tool that bridges Perforce (P4) and Git. It maintains 
 pip install -e .
 
 # Run the tool
-git-p4son [command] [options]
+git p4son [command] [options]
 python -m git_p4son [command] [options]
 ```
 
@@ -26,13 +26,19 @@ autopep8 --in-place <file>
 
 ## Architecture
 
-The CLI (`cli.py`) dispatches to three command modules, each exposing a `*_command(args)` entry point:
+The CLI (`cli.py`) dispatches to command modules, each exposing a `*_command(args)` entry point:
 
 - **`sync.py`** — Syncs git repo with a Perforce changelist. Validates both git and p4 workspaces are clean, performs `p4 sync`, then creates a git commit. Supports syncing to a specific CL number, `latest`, or `last-synced`. Uses threaded real-time output processing (`P4SyncOutputProcessor`) to parse p4 sync progress.
 
-- **`edit.py`** — Opens git-changed files for edit in Perforce. Computes changes between a base branch and HEAD using `git merge-base` for common ancestor detection, then maps git operations (add/modify/delete/rename) to corresponding p4 operations (edit/add/delete/move). Supports creating new changelists with git commit descriptions.
+- **`edit.py`** — Opens git-changed files for edit in Perforce. Computes changes between a base branch and HEAD using `git merge-base` for common ancestor detection, then maps git operations (add/modify/delete/rename) to corresponding p4 operations (edit/add/delete/move).
+
+- **`changelist.py`** — Creates and updates Perforce changelists. Supports creating new changelists with enumerated git commit descriptions and updating existing changelist descriptions.
 
 - **`list_changes.py`** — Lists git commit subjects since a base branch in chronological order. Used for generating changelist descriptions.
+
+- **`review.py`** — Creates and updates Swarm reviews. Combines changelist creation, file editing, and shelving into a single workflow.
+
+**`changelist_store.py`** provides changelist alias utilities, storing named aliases for changelist numbers in `.git-p4son/changelists/<name>`.
 
 **`common.py`** provides shared utilities: workspace detection (walks up directory tree for `.git`), subprocess execution with timing (`run()`), and real-time output streaming via threading (`run_with_output()`).
 

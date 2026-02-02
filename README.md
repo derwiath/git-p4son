@@ -38,7 +38,7 @@ pip install -e .
 ```
 
 The `-e` flag installs the package in "editable" mode. Which means that changes
-to the code are immediately available and `git-p4son` can be tested right
+to the code are immediately available and `git p4son` can be tested right
 away without reinstalling.
 
 ### Development Requirements
@@ -73,30 +73,39 @@ git commit -m "Initial commit for CL 123"
 
 ## Usage
 
-git-p4son provides three main commands: `sync`, `edit`, and `list-changes`.
+git-p4son provides five commands: `sync`, `edit`, `changelist`, `list-changes`, and `review`.
+
+To see help for any command, use `-h`:
+
+```sh
+git p4son -h
+git p4son sync -h
+```
+
+**Note:** When invoking via `git p4son`, the `--help` flag is intercepted by git (to look for man pages). Use `-h` instead, or `git p4son -- --help` to force it through. Alternatively, call the executable directly: `git-p4son --help`.
 
 ### Sync Command
 
 Sync local git repository with a Perforce workspace:
 
 ```sh
-git-p4son sync <changelist> [--force]
+git p4son sync <changelist> [--force]
 ```
 
 **Arguments:**
-- `changelist`: Changelist to sync, or special keywords:
+- `changelist`: Changelist number, named alias, or special keywords:
   - `latest`: Sync to the latest changelist affecting the workspace
   - `last-synced`: Re-sync the last synced changelist
 
 **Options:**
-- `-f, --force`: Force sync encountered writable files. When clobber is not enabled on your workspace, p4 will fail to sync files that are read-only. git removes the readonly flag on touched files.
+- `-f, --force`: Force sync encountered writable files and allow syncing to older changelists.
 
 **Examples:**
 ```sh
-git-p4son sync 12345
-git-p4son sync latest
-git-p4son sync last-synced
-git-p4son sync 12345 --force
+git p4son sync 12345
+git p4son sync latest
+git p4son sync last-synced
+git p4son sync 12345 --force
 ```
 
 ### Edit Command
@@ -104,11 +113,11 @@ git-p4son sync 12345 --force
 Find files that have changed between your current git `HEAD` and the base branch, and open them for edit in Perforce:
 
 ```sh
-git-p4son edit <changelist> [--base-branch BASE_BRANCH] [--dry-run]
+git p4son edit <changelist> [--base-branch BASE_BRANCH] [--dry-run]
 ```
 
 **Arguments:**
-- `changelist`: Changelist to update
+- `changelist`: Changelist number or named alias to add files to
 
 **Options:**
 - `-b, --base-branch BASE_BRANCH`: Base branch where p4 and git are in sync. Default is `HEAD~1`.
@@ -116,9 +125,78 @@ git-p4son edit <changelist> [--base-branch BASE_BRANCH] [--dry-run]
 
 **Examples:**
 ```sh
-git-p4son edit 12345
-git-p4son edit 12345 --base-branch main
-git-p4son edit 12345 --dry-run
+git p4son edit 12345
+git p4son edit 12345 --base-branch main
+git p4son edit 12345 --dry-run
+```
+
+### Changelist Command
+
+Manage Perforce changelists.
+
+#### changelist new
+
+Create a new Perforce changelist with a description and enumerated git commits:
+
+```sh
+git p4son changelist new -m <message> [--base-branch BASE_BRANCH] [alias] [--force] [--dry-run]
+```
+
+**Arguments:**
+- `alias`: Optional alias name to save the new changelist number under
+
+**Options:**
+- `-m, --message MESSAGE`: Changelist description message (required)
+- `-b, --base-branch BASE_BRANCH`: Base branch for enumerating commits. Default is `HEAD~1`
+- `-f, --force`: Overwrite an existing alias file
+- `-n, --dry-run`: Pretend and print what would be created, but do not execute
+
+**Examples:**
+```sh
+git p4son changelist new -m "Fix login bug"
+git p4son changelist new -m "Add feature" -b main
+git p4son changelist new -m "Fix bug" myalias
+```
+
+#### changelist set
+
+Save a changelist number under a named alias in `.git-p4son/changelists/<alias>`:
+
+```sh
+git p4son changelist set <changelist> <alias> [--force]
+```
+
+**Arguments:**
+- `changelist`: Changelist number to save
+- `alias`: Alias name to save the changelist number under
+
+**Options:**
+- `-f, --force`: Overwrite an existing alias file
+
+**Examples:**
+```sh
+git p4son changelist set 12345 myfeature
+```
+
+#### changelist update
+
+Update an existing changelist description by replacing the enumerated commit list:
+
+```sh
+git p4son changelist update <changelist> [--base-branch BASE_BRANCH] [--dry-run]
+```
+
+**Arguments:**
+- `changelist`: Changelist number or named alias to update
+
+**Options:**
+- `-b, --base-branch BASE_BRANCH`: Base branch for enumerating commits. Default is `HEAD~1`
+- `-n, --dry-run`: Pretend and print what would be updated, but do not execute
+
+**Examples:**
+```sh
+git p4son changelist update 12345
+git p4son changelist update myalias -b main
 ```
 
 ### List-Changes Command
@@ -126,7 +204,7 @@ git-p4son edit 12345 --dry-run
 List commit subjects since a base branch in chronological order (oldest first):
 
 ```sh
-git-p4son list-changes [--base-branch BASE_BRANCH]
+git p4son list-changes [--base-branch BASE_BRANCH]
 ```
 
 **Options:**
@@ -134,11 +212,60 @@ git-p4son list-changes [--base-branch BASE_BRANCH]
 
 **Examples:**
 ```sh
-git-p4son list-changes
-git-p4son list-changes --base-branch main
+git p4son list-changes
+git p4son list-changes --base-branch main
 ```
 
 This command is useful for generating changelist descriptions by listing all commit messages since the base branch, numbered sequentially.
+
+### Review Command
+
+Create or update Swarm reviews.
+
+#### review new
+
+Create a new changelist with changes since base branch and create a Swarm review:
+
+```sh
+git p4son review new -m <message> [--base-branch BASE_BRANCH] [alias] [--force] [--dry-run]
+```
+
+**Arguments:**
+- `alias`: Optional alias name to save the new changelist number under
+
+**Options:**
+- `-m, --message MESSAGE`: Changelist description message (required)
+- `-b, --base-branch BASE_BRANCH`: Base branch where p4 and git are in sync. Default is `HEAD~1`
+- `-f, --force`: Overwrite an existing alias file
+- `-n, --dry-run`: Pretend and print all commands, but do not execute
+
+**Examples:**
+```sh
+git p4son review new -m "Fix login bug"
+git p4son review new -m "Add feature" -b main myalias
+```
+
+#### review update
+
+Update an existing changelist with changes since base branch and update the Swarm review:
+
+```sh
+git p4son review update <changelist> [--base-branch BASE_BRANCH] [--description] [--dry-run]
+```
+
+**Arguments:**
+- `changelist`: Changelist number or named alias to update
+
+**Options:**
+- `-b, --base-branch BASE_BRANCH`: Base branch where p4 and git are in sync. Default is `HEAD~1`
+- `-d, --description`: Update the changelist description with the current commit list
+- `-n, --dry-run`: Pretend and print all commands, but do not execute
+
+**Examples:**
+```sh
+git p4son review update 12345
+git p4son review update myalias -d
+```
 
 ## Usage Example
 
@@ -147,7 +274,7 @@ Here's a typical workflow using git-p4son:
 ```sh
 # Sync main with new changes from perforce, CL 124
 git checkout main
-git-p4son sync 124
+git p4son sync 124
 
 # Start work on a new feature
 git checkout -b my-fancy-feature
@@ -158,7 +285,7 @@ git commit -m "Feature part1"
 
 # Sync to the latest changelist affecting the workspace
 git checkout main
-git-p4son sync latest
+git p4son sync latest
 
 # Rebase your changes on main
 git checkout my-fancy-feature
@@ -169,17 +296,23 @@ git add .
 git commit -m "Feature part2"
 
 # List all commit messages since main branch (useful for changelist description)
-git-p4son list-changes --base-branch main
+git p4son list-changes --base-branch main
 
-# Open all edited files on your feature branch (compared to main) for edit in perforce
-# Store all files in changelist 126
-git-p4son edit 126 --base-branch main
+# Create a new changelist and open files for Swarm review
+git p4son review new -m "My fancy feature" -b main myfeature
 
-# Swap over to p4v and submit as CL 126
+# After review feedback, make more changes
+git add .
+git commit -m "Address review feedback"
+
+# Update the review with new changes
+git p4son review update myfeature -d -b main
+
+# After approval, submit in p4v
 
 # Sync to the latest changelist from perforce
 git checkout main
-git-p4son sync latest
+git p4son sync latest
 
 # Remove old branch as you don't need it anymore
 git branch -D my-fancy-feature
