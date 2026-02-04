@@ -231,9 +231,10 @@ function _GitP4sonCompleter {
 Register-ArgumentCompleter -CommandName git-p4son -Native -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
-    $tokens = $commandAst.ToString() -split '\s+'
-    # Skip the first token ("git-p4son"), rest are the p4son args
-    $p4sonArgs = @($tokens | Select-Object -Skip 1)
+    # Use CommandElements for proper token parsing (handles quoted strings)
+    $elements = @($commandAst.CommandElements | ForEach-Object { $_.ToString() })
+    # Skip the first element ("git-p4son"), rest are the p4son args
+    $p4sonArgs = @($elements | Select-Object -Skip 1)
 
     _GitP4sonCompleter $wordToComplete $commandAst $cursorPosition $p4sonArgs
 }
@@ -242,11 +243,12 @@ Register-ArgumentCompleter -CommandName git-p4son -Native -ScriptBlock {
 Register-ArgumentCompleter -CommandName git -Native -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
-    $tokens = $commandAst.ToString() -split '\s+'
+    # Use CommandElements for proper token parsing (handles quoted strings)
+    $elements = @($commandAst.CommandElements | ForEach-Object { $_.ToString() })
     # Check if this is a "git p4son" invocation
-    if ($tokens.Count -ge 2 -and $tokens[1] -eq 'p4son') {
+    if ($elements.Count -ge 2 -and $elements[1] -eq 'p4son') {
         # Skip "git" and "p4son", rest are the p4son args
-        $p4sonArgs = @($tokens | Select-Object -Skip 2)
+        $p4sonArgs = @($elements | Select-Object -Skip 2)
         return _GitP4sonCompleter $wordToComplete $commandAst $cursorPosition $p4sonArgs
     }
 
