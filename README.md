@@ -254,6 +254,31 @@ This command iterates through each alias, displays it, and prompts for action:
 git p4son alias clean
 ```
 
+## Shell Completions
+
+Tab completion is available for both zsh and PowerShell, including commands, flags, and dynamic alias names.
+
+### zsh
+
+Add the `completions/` directory to your `fpath` before `compinit` in `~/.zshrc`:
+
+```zsh
+fpath=(/path/to/git-p4son/completions $fpath)
+autoload -Uz compinit && compinit
+```
+
+This enables completion for both `git p4son <TAB>` and `git-p4son <TAB>`.
+
+### PowerShell
+
+Dot-source the completion script in your PowerShell profile (`$PROFILE`):
+
+```powershell
+. /path/to/git-p4son/completions/git-p4son.ps1
+```
+
+This enables completion for both `git p4son <TAB>` and `git-p4son <TAB>`.
+
 ## Usage Example
 
 Here's a typical workflow using git-p4son:
