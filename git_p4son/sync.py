@@ -229,7 +229,7 @@ def git_changelist_of_last_commit(workspace_dir: str) -> int | None:
     pattern = r"^(\d+|pergit|git-p4son): p4 sync //\.\.\.@(\d+)$"
     match = re.search(pattern, msg)
     if match:
-        return int(match.group(1))
+        return int(match.group(2))
     else:
         return None
 
