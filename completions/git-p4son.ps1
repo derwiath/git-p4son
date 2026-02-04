@@ -246,6 +246,13 @@ Register-ArgumentCompleter -CommandName git-p4son -Native -ScriptBlock {
     _GitP4sonCompleter $wordToComplete $commandAst $cursorPosition $p4sonArgs
 }
 
+# Save any existing git completer (e.g. posh-git) before we register ours,
+# so we can chain to it for non-p4son subcommands.
+$script:_GitP4sonPreviousGitCompleter = $null
+if ($global:__NativeArgumentCompleters -and $global:__NativeArgumentCompleters.ContainsKey('git')) {
+    $script:_GitP4sonPreviousGitCompleter = $global:__NativeArgumentCompleters['git']
+}
+
 # Register completer for "git" to handle "git p4son ..." subcommand
 Register-ArgumentCompleter -CommandName git -Native -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
@@ -259,5 +266,8 @@ Register-ArgumentCompleter -CommandName git -Native -ScriptBlock {
         return _GitP4sonCompleter $wordToComplete $commandAst $cursorPosition $p4sonArgs
     }
 
-    # Not a p4son subcommand, don't interfere with other git completions
+    # Not a p4son subcommand, fall back to the previous git completer
+    if ($script:_GitP4sonPreviousGitCompleter) {
+        return & $script:_GitP4sonPreviousGitCompleter $wordToComplete $commandAst $cursorPosition
+    }
 }
