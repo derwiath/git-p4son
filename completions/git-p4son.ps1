@@ -191,6 +191,18 @@ function _GitP4sonCompleter {
                                         $f, $f, 'ParameterName', $f)
                                 }
                             }
+                        } else {
+                            # Count positionals after the subcommand
+                            $subPos = @($positionals | Where-Object { $_ -ne $subcommand }).Count
+                            if ($subPos -ge 1) {
+                                # Second positional: alias name
+                                foreach ($a in (_GitP4sonGetAliases)) {
+                                    if ($a -like "$wordToComplete*") {
+                                        $completions += [System.Management.Automation.CompletionResult]::new(
+                                            $a, $a, 'ParameterValue', "Alias: $a")
+                                    }
+                                }
+                            }
                         }
                     }
                     'delete' {
