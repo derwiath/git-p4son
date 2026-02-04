@@ -41,11 +41,6 @@ Examples:
         version=f'git-p4son {__version__}'
     )
 
-    parser.add_argument(
-        '-s', '--sleep',
-        help='Sleep for the specified number of seconds after the command is done.'
-    )
-
     subparsers = parser.add_subparsers(
         dest='command',
         help='Available commands',
@@ -120,6 +115,10 @@ Examples:
         action='store_true',
         help='Add #review keyword and shelve to create a Swarm review'
     )
+    new_parser.add_argument(
+        '-s', '--sleep',
+        help='Sleep for the specified number of seconds after the command is done'
+    )
 
     # Update subcommand
     update_parser = subparsers.add_parser(
@@ -152,6 +151,10 @@ Examples:
         '--shelve',
         action='store_true',
         help='Re-shelve the changelist after updating'
+    )
+    update_parser.add_argument(
+        '-s', '--sleep',
+        help='Sleep for the specified number of seconds after the command is done'
     )
 
     # List-changes subcommand
@@ -256,7 +259,7 @@ def main() -> int:
     try:
         exit_code = run_command(args)
 
-        if exit_code == 0 and args.sleep is not None:
+        if exit_code == 0 and getattr(args, 'sleep', None) is not None:
             seconds = int(args.sleep)
             print(f'Sleeping for {seconds} seconds')
             time.sleep(seconds)

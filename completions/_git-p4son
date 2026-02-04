@@ -23,7 +23,6 @@ __git-p4son_aliases() {
 __git-p4son_sync() {
     _arguments -s \
         '(-f --force)'{-f,--force}'[Force sync writable files and allow older changelists]' \
-        '(-s --sleep)'{-s,--sleep}'[Sleep after command]:seconds:' \
         '1: :->changelist'
 
     case "$state" in
@@ -66,8 +65,7 @@ __git-p4son_update() {
 
 __git-p4son_list-changes() {
     _arguments -s \
-        '(-b --base-branch)'{-b,--base-branch}'[Base branch]:branch:__git_branch_names' \
-        '(-s --sleep)'{-s,--sleep}'[Sleep after command]:seconds:'
+        '(-b --base-branch)'{-b,--base-branch}'[Base branch]:branch:__git_branch_names'
 }
 
 __git-p4son_alias() {
@@ -79,7 +77,6 @@ __git-p4son_alias() {
     )
 
     _arguments -C \
-        '(-s --sleep)'{-s,--sleep}'[Sleep after command]:seconds:' \
         '1: :->subcmd' \
         '*:: :->args'
 
@@ -120,7 +117,6 @@ _git-p4son() {
 
     _arguments -C \
         '--version[Show version]' \
-        '(-s --sleep)'{-s,--sleep}'[Sleep after command]:seconds:' \
         '1: :->command' \
         '*:: :->args'
 

@@ -72,7 +72,7 @@ function _GitP4sonCompleter {
         }
         # Global flags
         if ($wordToComplete -match '^-') {
-            $globalFlags = @('--version', '-s', '--sleep')
+            $globalFlags = @('--version')
             foreach ($f in $globalFlags) {
                 if ($f -like "$wordToComplete*") {
                     $completions += [System.Management.Automation.CompletionResult]::new(
@@ -87,7 +87,7 @@ function _GitP4sonCompleter {
     switch ($command) {
         'sync' {
             if ($wordToComplete -match '^-') {
-                $flags = @('-f', '--force', '-s', '--sleep')
+                $flags = @('-f', '--force')
                 foreach ($f in $flags) {
                     if ($f -like "$wordToComplete*") {
                         $completions += [System.Management.Automation.CompletionResult]::new(
@@ -148,7 +148,7 @@ function _GitP4sonCompleter {
         }
         'list-changes' {
             if ($wordToComplete -match '^-') {
-                $flags = @('-b', '--base-branch', '-s', '--sleep')
+                $flags = @('-b', '--base-branch')
                 foreach ($f in $flags) {
                     if ($f -like "$wordToComplete*") {
                         $completions += [System.Management.Automation.CompletionResult]::new(
@@ -176,7 +176,7 @@ function _GitP4sonCompleter {
                 switch ($subcommand) {
                     'set' {
                         if ($wordToComplete -match '^-') {
-                            $flags = @('-f', '--force', '-s', '--sleep')
+                            $flags = @('-f', '--force')
                             foreach ($f in $flags) {
                                 if ($f -like "$wordToComplete*") {
                                     $completions += [System.Management.Automation.CompletionResult]::new(
@@ -194,37 +194,10 @@ function _GitP4sonCompleter {
                                 }
                             }
                         }
-                        if ($wordToComplete -match '^-') {
-                            $flags = @('-s', '--sleep')
-                            foreach ($f in $flags) {
-                                if ($f -like "$wordToComplete*") {
-                                    $completions += [System.Management.Automation.CompletionResult]::new(
-                                        $f, $f, 'ParameterName', $f)
-                                }
-                            }
-                        }
                     }
                     'list' {
-                        if ($wordToComplete -match '^-') {
-                            $flags = @('-s', '--sleep')
-                            foreach ($f in $flags) {
-                                if ($f -like "$wordToComplete*") {
-                                    $completions += [System.Management.Automation.CompletionResult]::new(
-                                        $f, $f, 'ParameterName', $f)
-                                }
-                            }
-                        }
                     }
                     'clean' {
-                        if ($wordToComplete -match '^-') {
-                            $flags = @('-s', '--sleep')
-                            foreach ($f in $flags) {
-                                if ($f -like "$wordToComplete*") {
-                                    $completions += [System.Management.Automation.CompletionResult]::new(
-                                        $f, $f, 'ParameterName', $f)
-                                }
-                            }
-                        }
                     }
                 }
             }
