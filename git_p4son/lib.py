@@ -204,9 +204,9 @@ def split_description_message_and_commits(description: str) -> tuple[str, str, s
         return (description, '', '')
 
     # Find end of numbered list (consecutive "<number>. " lines)
-    end = start
-    expected_nr = 1
-    for j in range(start, len(lines)):
+    end = start + 1
+    expected_nr = 2
+    for j in range(end, len(lines)):
         if lines[j].startswith(f'{expected_nr}. '):
             expected_nr += 1
             end = j + 1
