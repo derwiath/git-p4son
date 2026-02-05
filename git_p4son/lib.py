@@ -219,10 +219,25 @@ def split_description_message_and_commits(description: str) -> tuple[str, str, s
     return (message, commits, trailing)
 
 
+def count_commits_in_description(commits_text: str) -> int:
+    """
+    Count the number of enumerated commits in a commit list string.
+
+    Args:
+        commits_text: String containing lines like "1. First commit\\n2. Second commit"
+
+    Returns:
+        The count of commits (0 if empty or no valid commits)
+    """
+    if not commits_text:
+        return 0
+    return len(commits_text.splitlines())
+
+
 def update_changelist(changelist_nr: str, base_branch: str, workspace_dir: str, dry_run: bool = False) -> int:
     """
-    Update an existing Perforce changelist by replacing the enumerated
-    commit list in the description.
+    Update an existing Perforce changelist by appending new commits
+    to the enumerated commit list in the description.
 
     Args:
         changelist_nr: The changelist number to update
@@ -240,19 +255,28 @@ def update_changelist(changelist_nr: str, base_branch: str, workspace_dir: str, 
 
     # Extract and split description
     old_description = extract_description(spec_text)
-    user_message, _, trailing = split_description_message_and_commits(
+    user_message, old_commits, trailing = split_description_message_and_commits(
         old_description)
 
-    # Generate new commit list
-    returncode, commits_description = get_enumerated_change_description_since(
-        base_branch, workspace_dir)
+    # Count existing commits to continue numbering
+    existing_count = count_commits_in_description(old_commits)
+    start_number = existing_count + 1
+
+    # Generate new commit list, starting from the next number
+    returncode, new_commits = get_enumerated_change_description_since(
+        base_branch, workspace_dir, start_number=start_number)
     if returncode != 0:
         return returncode
 
-    # Rebuild description: message + commits + any trailing text
+    # Rebuild description: message + old commits + new commits + any trailing text
     new_description = user_message
-    if commits_description:
-        new_description = user_message + "\n" + commits_description
+    if old_commits:
+        new_description = user_message + "\n" + old_commits
+    if new_commits:
+        if old_commits:
+            new_description = new_description + "\n" + new_commits
+        else:
+            new_description = new_description + "\n" + new_commits
     if trailing:
         new_description = new_description + "\n" + trailing
 

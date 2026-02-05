@@ -67,6 +67,16 @@ class TestGetEnumeratedChangeDescriptionSince(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIsNone(desc)
 
+    @mock.patch('git_p4son.list_changes.run')
+    def test_start_number_parameter(self, mock_run):
+        mock_run.return_value = make_run_result(stdout=[
+            'a111111 New commit A',
+            'b222222 New commit B',
+        ])
+        rc, desc = get_enumerated_change_description_since('main', '/ws', start_number=4)
+        self.assertEqual(rc, 0)
+        self.assertEqual(desc, '4. New commit A\n5. New commit B')
+
 
 class TestListChangesCommand(unittest.TestCase):
     @mock.patch('git_p4son.list_changes.ensure_workspace', return_value='/ws')

@@ -4,6 +4,7 @@ import unittest
 from unittest import mock
 
 from git_p4son.lib import (
+    count_commits_in_description,
     create_changelist,
     extract_description,
     get_changelist_spec,
@@ -108,6 +109,22 @@ class TestSplitDescriptionMessageAndCommits(unittest.TestCase):
         self.assertEqual(trailing, '')
 
 
+class TestCountCommitsInDescription(unittest.TestCase):
+    def test_counts_commits(self):
+        commits = '1. First commit\n2. Second commit\n3. Third commit'
+        self.assertEqual(count_commits_in_description(commits), 3)
+
+    def test_single_commit(self):
+        commits = '1. Only commit'
+        self.assertEqual(count_commits_in_description(commits), 1)
+
+    def test_empty_string(self):
+        self.assertEqual(count_commits_in_description(''), 0)
+
+    def test_none_like_empty(self):
+        self.assertEqual(count_commits_in_description(''), 0)
+
+
 class TestCreateChangelist(unittest.TestCase):
     @mock.patch('git_p4son.lib.subprocess.run')
     @mock.patch('git_p4son.lib.get_enumerated_change_description_since')
@@ -190,9 +207,10 @@ class TestUpdateChangelist(unittest.TestCase):
     @mock.patch('git_p4son.lib.subprocess.run')
     @mock.patch('git_p4son.lib.get_enumerated_change_description_since')
     @mock.patch('git_p4son.lib.get_changelist_spec')
-    def test_updates_commit_list(self, mock_get_spec, mock_get_desc, mock_subprocess):
+    def test_appends_new_commits(self, mock_get_spec, mock_get_desc, mock_subprocess):
         mock_get_spec.return_value = (0, SAMPLE_SPEC)
-        mock_get_desc.return_value = (0, '1. New commit A\n2. New commit B')
+        # New commits should be numbered 3 and 4 (continuing from existing 1, 2)
+        mock_get_desc.return_value = (0, '3. New commit A\n4. New commit B')
         mock_subprocess.return_value = mock.Mock(
             returncode=0,
             stdout='Change 12345 updated.',
@@ -200,11 +218,18 @@ class TestUpdateChangelist(unittest.TestCase):
         )
         rc = update_changelist('12345', 'HEAD~1', '/ws')
         self.assertEqual(rc, 0)
+        # Verify start_number was passed correctly (2 existing commits -> start at 3)
+        mock_get_desc.assert_called_once_with('HEAD~1', '/ws', start_number=3)
         # Verify the new spec was passed
         call_kwargs = mock_subprocess.call_args
         spec_input = call_kwargs.kwargs.get(
             'input') or call_kwargs[1].get('input')
-        self.assertIn('New commit A', spec_input)
+        # Old commits preserved
+        self.assertIn('1. Add validation', spec_input)
+        self.assertIn('2. Fix redirect', spec_input)
+        # New commits appended
+        self.assertIn('3. New commit A', spec_input)
+        self.assertIn('4. New commit B', spec_input)
         # user message preserved
         self.assertIn('Fix the login bug', spec_input)
 
@@ -212,9 +237,25 @@ class TestUpdateChangelist(unittest.TestCase):
     @mock.patch('git_p4son.lib.get_changelist_spec')
     def test_dry_run(self, mock_get_spec, mock_get_desc):
         mock_get_spec.return_value = (0, SAMPLE_SPEC)
-        mock_get_desc.return_value = (0, '1. New commit')
+        mock_get_desc.return_value = (0, '3. New commit')
         rc = update_changelist('12345', 'HEAD~1', '/ws', dry_run=True)
         self.assertEqual(rc, 0)
+
+    @mock.patch('git_p4son.lib.subprocess.run')
+    @mock.patch('git_p4son.lib.get_enumerated_change_description_since')
+    @mock.patch('git_p4son.lib.get_changelist_spec')
+    def test_no_existing_commits_starts_at_one(self, mock_get_spec, mock_get_desc, mock_subprocess):
+        mock_get_spec.return_value = (0, SAMPLE_SPEC_NO_COMMITS)
+        mock_get_desc.return_value = (0, '1. First commit')
+        mock_subprocess.return_value = mock.Mock(
+            returncode=0,
+            stdout='Change 12345 updated.',
+            stderr='',
+        )
+        rc = update_changelist('12345', 'HEAD~1', '/ws')
+        self.assertEqual(rc, 0)
+        # Should start at 1 since no existing commits
+        mock_get_desc.assert_called_once_with('HEAD~1', '/ws', start_number=1)
 
 
 if __name__ == '__main__':
