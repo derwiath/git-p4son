@@ -131,7 +131,8 @@ def extract_description_lines(spec_text: str) -> list[str]:
     for line in lines:
         if line.startswith('Description:'):
             in_description = True
-        else if in_description:
+            continue
+        if in_description:
             if line.startswith('\t'):
                 description_lines.append(line[1:])  # strip leading tab
             else:
@@ -152,22 +153,30 @@ def replace_description_in_spec(spec_text: str, new_description_lines: list[str]
     """
     lines = spec_text.splitlines()
     result_lines = []
-    in_description = False
-    for line in lines:
-        if line.startswith('Description:'):
-            in_description = True
-            result_lines.append(line)
-            # Add new description lines, tab-indented
-            for desc_line in new_description_lines:
-                result_lines.append('\t' + desc_line)
-        else if in_description:
-            if line.startswith('\t'):
-                continue  # skip old description lines
-            else:
-                in_description = False
-                result_lines.append(line)
-        else:
-            result_lines.append(line)
+
+    # Find the Description: line
+    i = 0
+    while i < len(lines) and not lines[i].startswith('Description:'):
+        result_lines.append(lines[i])
+        i += 1
+
+    if i >= len(lines):
+        # No Description: found, return original
+        return spec_text
+
+    # Add Description: header and new description lines
+    result_lines.append(lines[i])
+    for desc_line in new_description_lines:
+        result_lines.append('\t' + desc_line)
+    i += 1
+
+    # Skip old description lines (tab-indented)
+    while i < len(lines) and lines[i].startswith('\t'):
+        i += 1
+
+    # Append remaining lines
+    result_lines.extend(lines[i:])
+
     return '\n'.join(result_lines) + '\n'
 
 
