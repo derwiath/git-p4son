@@ -220,7 +220,7 @@ def git_commit(message: str, workspace_dir: str, allow_empty: bool = False) -> b
 
 def git_changelist_of_last_commit(workspace_dir: str) -> int | None:
     """Get the changelist number from the last commit message."""
-    res = run_with_output(['git', 'log', '--oneline', '-1', '--pretty="%s"'],
+    res = run_with_output(['git', 'log', '--oneline', '-1', '--pretty=%s'],
                           cwd=workspace_dir, on_output=echo_output_to_stream)
     if res.returncode != 0 or len(res.stdout) == 0:
         return None
