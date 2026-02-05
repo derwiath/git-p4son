@@ -131,8 +131,7 @@ def extract_description_lines(spec_text: str) -> list[str]:
     for line in lines:
         if line.startswith('Description:'):
             in_description = True
-            continue
-        if in_description:
+        else if in_description:
             if line.startswith('\t'):
                 description_lines.append(line[1:])  # strip leading tab
             else:
@@ -161,8 +160,7 @@ def replace_description_in_spec(spec_text: str, new_description_lines: list[str]
             # Add new description lines, tab-indented
             for desc_line in new_description_lines:
                 result_lines.append('\t' + desc_line)
-            continue
-        if in_description:
+        else if in_description:
             if line.startswith('\t'):
                 continue  # skip old description lines
             else:
