@@ -126,17 +126,19 @@ def extract_description_lines(spec_text: str) -> list[str]:
         List of description lines with tabs stripped.
     """
     lines = spec_text.splitlines()
+
+    # Find the Description: line
+    i = 0
+    while i < len(lines) and not lines[i].startswith('Description:'):
+        i += 1
+    i += 1  # skip past Description: line
+
+    # Collect tab-indented description lines
     description_lines = []
-    in_description = False
-    for line in lines:
-        if line.startswith('Description:'):
-            in_description = True
-            continue
-        if in_description:
-            if line.startswith('\t'):
-                description_lines.append(line[1:])  # strip leading tab
-            else:
-                break
+    while i < len(lines) and lines[i].startswith('\t'):
+        description_lines.append(lines[i][1:])  # strip leading tab
+        i += 1
+
     return description_lines
 
 
