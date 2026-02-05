@@ -10,7 +10,7 @@ import re
 import sys
 import subprocess
 from .common import run
-from .list_changes import get_enumerated_change_description_since
+from .list_changes import get_enumerated_commit_lines_since
 
 
 # ---------------------------------------------------------------------------
@@ -32,22 +32,20 @@ def create_changelist(message: str, base_branch: str, workspace_dir: str, dry_ru
         Tuple of (returncode, changelist_number or None)
     """
     # Build description: user message + enumerated commits
-    returncode, commits_description = get_enumerated_change_description_since(
+    returncode, commit_lines = get_enumerated_commit_lines_since(
         base_branch, workspace_dir)
     if returncode != 0:
         return (returncode, None)
 
-    description = message
-    if commits_description:
-        description = message + "\n" + commits_description
+    description_lines = message.splitlines() + commit_lines
 
     if dry_run:
         print(f"Would create new changelist with description:")
-        print(description)
+        print('\n'.join(description_lines))
         return (0, None)
 
     # Prepare the changelist spec content
-    tabbed_description = "\n\t".join(description.splitlines())
+    tabbed_description = "\n\t".join(description_lines)
     spec_content = f"Change: new\n\nDescription:\n\t{tabbed_description}\n"
 
     # Create the changelist using p4 change -i
@@ -118,14 +116,14 @@ def get_changelist_spec(changelist_nr: str, workspace_dir: str) -> tuple[int, st
         return (1, None)
 
 
-def extract_description(spec_text: str) -> str:
+def extract_description_lines(spec_text: str) -> list[str]:
     """
     Extract the Description field from a p4 changelist spec.
 
     The spec has tab-indented continuation lines under the Description: header.
 
     Returns:
-        The description string with tabs stripped.
+        List of description lines with tabs stripped.
     """
     lines = spec_text.splitlines()
     description_lines = []
@@ -139,16 +137,16 @@ def extract_description(spec_text: str) -> str:
                 description_lines.append(line[1:])  # strip leading tab
             else:
                 break
-    return '\n'.join(description_lines)
+    return description_lines
 
 
-def replace_description_in_spec(spec_text: str, new_description: str) -> str:
+def replace_description_in_spec(spec_text: str, new_description_lines: list[str]) -> str:
     """
     Replace the Description field in a p4 changelist spec.
 
     Args:
         spec_text: The full spec text from p4 change -o
-        new_description: The new description string
+        new_description_lines: The new description as a list of lines
 
     Returns:
         The spec text with the description replaced.
@@ -156,15 +154,13 @@ def replace_description_in_spec(spec_text: str, new_description: str) -> str:
     lines = spec_text.splitlines()
     result_lines = []
     in_description = False
-    description_replaced = False
     for line in lines:
         if line.startswith('Description:'):
             in_description = True
             result_lines.append(line)
             # Add new description lines, tab-indented
-            for desc_line in new_description.splitlines():
+            for desc_line in new_description_lines:
                 result_lines.append('\t' + desc_line)
-            description_replaced = True
             continue
         if in_description:
             if line.startswith('\t'):
@@ -177,23 +173,22 @@ def replace_description_in_spec(spec_text: str, new_description: str) -> str:
     return '\n'.join(result_lines) + '\n'
 
 
-def split_description_message_and_commits(description: str) -> tuple[str, str, str]:
+def split_description_lines(lines: list[str]) -> tuple[list[str], list[str], list[str]]:
     """
-    Split a changelist description into the user message, the
+    Split changelist description lines into the user message, the
     enumerated commit list, and any trailing text.
 
     The commit list starts at the first line matching "1. " and
     continues as long as lines match "<number>. ". Any text after
-    the numbered list is returned as trailing text.
+    the numbered list is returned as trailing lines.
 
     Args:
-        description: The full description string
+        lines: The description as a list of lines
 
     Returns:
-        Tuple of (user_message, commits_text, trailing_text).
-        commits_text and trailing_text may be empty strings.
+        Tuple of (message_lines, commit_lines, trailing_lines).
+        Each may be an empty list.
     """
-    lines = description.splitlines()
     # Find start of numbered list
     start = None
     for i, line in enumerate(lines):
@@ -201,7 +196,7 @@ def split_description_message_and_commits(description: str) -> tuple[str, str, s
             start = i
             break
     if start is None:
-        return (description, '', '')
+        return (lines, [], [])
 
     # Find end of numbered list (consecutive "<number>. " lines)
     end = start + 1
@@ -213,25 +208,7 @@ def split_description_message_and_commits(description: str) -> tuple[str, str, s
         else:
             break
 
-    message = '\n'.join(lines[:start])
-    commits = '\n'.join(lines[start:end])
-    trailing = '\n'.join(lines[end:])
-    return (message, commits, trailing)
-
-
-def count_commits_in_description(commits_text: str) -> int:
-    """
-    Count the number of enumerated commits in a commit list string.
-
-    Args:
-        commits_text: String containing lines like "1. First commit\\n2. Second commit"
-
-    Returns:
-        The count of commits (0 if empty or no valid commits)
-    """
-    if not commits_text:
-        return 0
-    return len(commits_text.splitlines())
+    return (lines[:start], lines[start:end], lines[end:])
 
 
 def update_changelist(changelist_nr: str, base_branch: str, workspace_dir: str, dry_run: bool = False) -> int:
@@ -253,40 +230,29 @@ def update_changelist(changelist_nr: str, base_branch: str, workspace_dir: str, 
     if returncode != 0:
         return returncode
 
-    # Extract and split description
-    old_description = extract_description(spec_text)
-    user_message, old_commits, trailing = split_description_message_and_commits(
-        old_description)
+    # Extract and split description into lines
+    description_lines = extract_description_lines(spec_text)
+    message_lines, old_commit_lines, trailing_lines = split_description_lines(
+        description_lines)
 
-    # Count existing commits to continue numbering
-    existing_count = count_commits_in_description(old_commits)
-    start_number = existing_count + 1
-
-    # Generate new commit list, starting from the next number
-    returncode, new_commits = get_enumerated_change_description_since(
+    # Generate new commit list, continuing from existing count
+    start_number = len(old_commit_lines) + 1
+    returncode, new_commit_lines = get_enumerated_commit_lines_since(
         base_branch, workspace_dir, start_number=start_number)
     if returncode != 0:
         return returncode
 
-    # Rebuild description: message + old commits + new commits + any trailing text
-    new_description = user_message
-    if old_commits:
-        new_description = user_message + "\n" + old_commits
-    if new_commits:
-        if old_commits:
-            new_description = new_description + "\n" + new_commits
-        else:
-            new_description = new_description + "\n" + new_commits
-    if trailing:
-        new_description = new_description + "\n" + trailing
+    # Rebuild description: message + old commits + new commits + trailing
+    new_description_lines = message_lines + \
+        old_commit_lines + new_commit_lines + trailing_lines
 
     if dry_run:
         print(f"Would update changelist {changelist_nr} with description:")
-        print(new_description)
+        print('\n'.join(new_description_lines))
         return 0
 
     # Replace description in spec and submit
-    new_spec = replace_description_in_spec(spec_text, new_description)
+    new_spec = replace_description_in_spec(spec_text, new_description_lines)
 
     try:
         result = subprocess.run(

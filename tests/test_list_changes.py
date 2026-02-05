@@ -6,6 +6,7 @@ from unittest import mock
 from git_p4son.list_changes import (
     get_commit_subjects_since,
     get_enumerated_change_description_since,
+    get_enumerated_commit_lines_since,
     list_changes_command,
 )
 from tests.helpers import make_run_result
@@ -46,6 +47,43 @@ class TestGetCommitSubjectsSince(unittest.TestCase):
         rc, subjects = get_commit_subjects_since('main', '/workspace')
         self.assertEqual(rc, 0)
         self.assertEqual(subjects, ['abc1234'])
+
+
+class TestGetEnumeratedCommitLinesSince(unittest.TestCase):
+    @mock.patch('git_p4son.list_changes.run')
+    def test_returns_enumerated_lines(self, mock_run):
+        mock_run.return_value = make_run_result(stdout=[
+            'a111111 Add feature',
+            'b222222 Fix bug',
+            'c333333 Update docs',
+        ])
+        rc, lines = get_enumerated_commit_lines_since('main', '/ws')
+        self.assertEqual(rc, 0)
+        self.assertEqual(lines, ['1. Add feature', '2. Fix bug', '3. Update docs'])
+
+    @mock.patch('git_p4son.list_changes.run')
+    def test_no_commits_returns_empty_list(self, mock_run):
+        mock_run.return_value = make_run_result(stdout=[])
+        rc, lines = get_enumerated_commit_lines_since('main', '/ws')
+        self.assertEqual(rc, 0)
+        self.assertEqual(lines, [])
+
+    @mock.patch('git_p4son.list_changes.run')
+    def test_start_number_parameter(self, mock_run):
+        mock_run.return_value = make_run_result(stdout=[
+            'a111111 New commit A',
+            'b222222 New commit B',
+        ])
+        rc, lines = get_enumerated_commit_lines_since('main', '/ws', start_number=4)
+        self.assertEqual(rc, 0)
+        self.assertEqual(lines, ['4. New commit A', '5. New commit B'])
+
+    @mock.patch('git_p4son.list_changes.run')
+    def test_failure_returns_empty_list(self, mock_run):
+        mock_run.return_value = make_run_result(returncode=128)
+        rc, lines = get_enumerated_commit_lines_since('main', '/ws')
+        self.assertEqual(rc, 128)
+        self.assertEqual(lines, [])
 
 
 class TestGetEnumeratedChangeDescriptionSince(unittest.TestCase):
