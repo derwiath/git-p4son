@@ -11,7 +11,7 @@ from git_p4son.sync import (
     get_latest_changelist_affecting_workspace,
     get_writable_files,
     git_add_all_files,
-    git_changelist_of_last_commit,
+    git_changelist_of_last_sync,
     git_commit,
     git_is_workspace_clean,
     p4_is_workspace_clean,
@@ -131,13 +131,13 @@ class TestGitCommit(unittest.TestCase):
         self.assertIn('--allow-empty', cmd)
 
 
-class TestGitChangelistOfLastCommit(unittest.TestCase):
+class TestGitChangelistOfLastSync(unittest.TestCase):
     @mock.patch('git_p4son.sync.run_with_output')
     def test_extracts_changelist_nr(self, mock_rwo):
         mock_rwo.return_value = make_run_result(stdout=[
             '12345: p4 sync //...@12345'
         ])
-        result = git_changelist_of_last_commit('/ws')
+        result = git_changelist_of_last_sync('/ws')
         self.assertEqual(result, 12345)
 
     @mock.patch('git_p4son.sync.run_with_output')
@@ -145,7 +145,7 @@ class TestGitChangelistOfLastCommit(unittest.TestCase):
         mock_rwo.return_value = make_run_result(stdout=[
             'pergit: p4 sync //...@12345'
         ])
-        result = git_changelist_of_last_commit('/ws')
+        result = git_changelist_of_last_sync('/ws')
         self.assertEqual(result, 12345)
 
     @mock.patch('git_p4son.sync.run_with_output')
@@ -153,7 +153,7 @@ class TestGitChangelistOfLastCommit(unittest.TestCase):
         mock_rwo.return_value = make_run_result(stdout=[
             'git-p4son: p4 sync //...@12345'
         ])
-        result = git_changelist_of_last_commit('/ws')
+        result = git_changelist_of_last_sync('/ws')
         self.assertEqual(result, 12345)
 
     @mock.patch('git_p4son.sync.run_with_output')
@@ -161,7 +161,7 @@ class TestGitChangelistOfLastCommit(unittest.TestCase):
         mock_rwo.return_value = make_run_result(stdout=[
             'pergot: p4 sync //...@12345'
         ])
-        result = git_changelist_of_last_commit('/ws')
+        result = git_changelist_of_last_sync('/ws')
         self.assertEqual(result, None)
 
     @mock.patch('git_p4son.sync.run_with_output')
@@ -169,20 +169,32 @@ class TestGitChangelistOfLastCommit(unittest.TestCase):
         mock_rwo.return_value = make_run_result(stdout=[
             '"some other commit message"'
         ])
-        result = git_changelist_of_last_commit('/ws')
+        result = git_changelist_of_last_sync('/ws')
         self.assertIsNone(result)
 
     @mock.patch('git_p4son.sync.run_with_output')
     def test_empty_output(self, mock_rwo):
         mock_rwo.return_value = make_run_result(stdout=[])
-        result = git_changelist_of_last_commit('/ws')
+        result = git_changelist_of_last_sync('/ws')
         self.assertIsNone(result)
 
     @mock.patch('git_p4son.sync.run_with_output')
     def test_command_failure(self, mock_rwo):
         mock_rwo.return_value = make_run_result(returncode=1)
-        result = git_changelist_of_last_commit('/ws')
+        result = git_changelist_of_last_sync('/ws')
         self.assertIsNone(result)
+
+    @mock.patch('git_p4son.sync.run_with_output')
+    def test_uses_git_grep_to_search_history(self, mock_rwo):
+        """Verifies git log --grep is used so sync commits are found
+        even when HEAD is not a sync commit."""
+        mock_rwo.return_value = make_run_result(stdout=[
+            'git-p4son: p4 sync //...@99999'
+        ])
+        result = git_changelist_of_last_sync('/ws')
+        self.assertEqual(result, 99999)
+        cmd = mock_rwo.call_args[0][0]
+        self.assertIn('--grep=: p4 sync //\\.\\.\\.@', cmd)
 
 
 class TestGetLatestChangelistAffectingWorkspace(unittest.TestCase):
@@ -287,7 +299,7 @@ class TestSyncCommand(unittest.TestCase):
     @mock.patch('git_p4son.sync.git_is_workspace_clean')
     @mock.patch('git_p4son.sync.resolve_changelist', return_value='12345')
     @mock.patch('git_p4son.sync.p4_sync', return_value=True)
-    @mock.patch('git_p4son.sync.git_changelist_of_last_commit', return_value=10000)
+    @mock.patch('git_p4son.sync.git_changelist_of_last_sync', return_value=10000)
     @mock.patch('git_p4son.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.ensure_workspace', return_value='/ws')
     def test_sync_specific_cl(self, _ws, _p4clean, _last_cl, _p4sync,
@@ -315,7 +327,7 @@ class TestSyncCommand(unittest.TestCase):
         self.assertEqual(rc, 1)
 
     @mock.patch('git_p4son.sync.resolve_changelist', return_value='100')
-    @mock.patch('git_p4son.sync.git_changelist_of_last_commit', return_value=200)
+    @mock.patch('git_p4son.sync.git_changelist_of_last_sync', return_value=200)
     @mock.patch('git_p4son.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.git_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.ensure_workspace', return_value='/ws')
@@ -329,7 +341,7 @@ class TestSyncCommand(unittest.TestCase):
     @mock.patch('git_p4son.sync.git_add_all_files', return_value=True)
     @mock.patch('git_p4son.sync.git_is_workspace_clean')
     @mock.patch('git_p4son.sync.p4_sync', return_value=True)
-    @mock.patch('git_p4son.sync.git_changelist_of_last_commit', return_value=200)
+    @mock.patch('git_p4son.sync.git_changelist_of_last_sync', return_value=200)
     @mock.patch('git_p4son.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.ensure_workspace', return_value='/ws')
     def test_older_cl_with_force_proceeds(self, _ws, _p4clean, _last_cl,
@@ -341,7 +353,7 @@ class TestSyncCommand(unittest.TestCase):
 
     @mock.patch('git_p4son.sync.resolve_changelist', return_value='100')
     @mock.patch('git_p4son.sync.p4_sync', return_value=True)
-    @mock.patch('git_p4son.sync.git_changelist_of_last_commit', return_value=100)
+    @mock.patch('git_p4son.sync.git_changelist_of_last_sync', return_value=100)
     @mock.patch('git_p4son.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.git_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.ensure_workspace', return_value='/ws')
@@ -351,7 +363,7 @@ class TestSyncCommand(unittest.TestCase):
         self.assertEqual(rc, 0)
 
     @mock.patch('git_p4son.sync.p4_sync', return_value=True)
-    @mock.patch('git_p4son.sync.git_changelist_of_last_commit', return_value=100)
+    @mock.patch('git_p4son.sync.git_changelist_of_last_sync', return_value=100)
     @mock.patch('git_p4son.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.git_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.ensure_workspace', return_value='/ws')
@@ -365,7 +377,7 @@ class TestSyncCommand(unittest.TestCase):
     @mock.patch('git_p4son.sync.git_commit', return_value=True)
     @mock.patch('git_p4son.sync.git_is_workspace_clean')
     @mock.patch('git_p4son.sync.p4_sync', return_value=True)
-    @mock.patch('git_p4son.sync.git_changelist_of_last_commit', return_value=100)
+    @mock.patch('git_p4son.sync.git_changelist_of_last_sync', return_value=100)
     @mock.patch('git_p4son.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.ensure_workspace', return_value='/ws')
     def test_latest_keyword(self, _ws, _p4clean, _last_cl, _p4sync,

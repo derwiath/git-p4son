@@ -218,10 +218,12 @@ def git_commit(message: str, workspace_dir: str, allow_empty: bool = False) -> b
     return res.returncode == 0
 
 
-def git_changelist_of_last_commit(workspace_dir: str) -> int | None:
-    """Get the changelist number from the last commit message."""
-    res = run_with_output(['git', 'log', '--oneline', '-1', '--pretty=%s'],
-                          cwd=workspace_dir, on_output=echo_output_to_stream)
+def git_changelist_of_last_sync(workspace_dir: str) -> int | None:
+    """Get the changelist number from the most recent sync commit."""
+    res = run_with_output(
+        ['git', 'log', '-1', '--pretty=%s',
+         '--grep=: p4 sync //\\.\\.\\.@'],
+        cwd=workspace_dir, on_output=echo_output_to_stream)
     if res.returncode != 0 or len(res.stdout) == 0:
         return None
 
@@ -305,7 +307,7 @@ def sync_command(args: argparse.Namespace) -> int:
             return 1
         args.changelist = resolved
 
-    last_changelist = git_changelist_of_last_commit(workspace_dir)
+    last_changelist = git_changelist_of_last_sync(workspace_dir)
     if args.changelist.lower() == 'last-synced':
         if not p4_sync(last_changelist, args.force, workspace_dir):
             print('Failed to sync files from perforce')
