@@ -4,7 +4,7 @@
 This way you can use the familiar local git development flow even though you are
 working on a project where perforce is used for source control.
 
-The idea is to have a `main` git branch that is kept in sync with the a branch of a Perforce depot.
+The idea is to have a `main` git branch that is kept in sync with a branch of a Perforce depot.
 From `main` you branch out into feature branches, where you do local changes
 and rebase on `main` whenever it is updated.
 
