@@ -227,6 +227,59 @@ class TestSequenceEditorCommand(unittest.TestCase):
 
     @mock.patch('git_p4son.review.subprocess.run')
     @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
+    def test_preserves_git_comments(self, _mock_ws, mock_subprocess_run):
+        """Comment lines from git's original todo file are preserved."""
+        git_original = (
+            "pick abc1234 First commit\n"
+            "\n"
+            "# Rebase abc1234..abc1234 onto abc1234 (1 command)\n"
+            "#\n"
+            "# Commands:\n"
+            "# p, pick <commit> = use commit\n"
+        )
+        our_todo = "pick abc First\nexec git p4son new feat --review -m 'msg'\n"
+
+        mock_subprocess_run.side_effect = [
+            mock.Mock(returncode=0, stdout='vim\n'),
+            mock.Mock(returncode=0),
+        ]
+
+        args = mock.Mock(filename='/tmp/git-rebase-todo')
+        todo_file = os.path.join('/workspace', '.git-p4son', 'reviews', 'todo')
+
+        written = []
+
+        def open_side_effect(path, mode='r'):
+            if path == '/tmp/git-rebase-todo' and mode == 'r':
+                return mock.mock_open(read_data=git_original)()
+            elif path == todo_file and mode == 'r':
+                return mock.mock_open(read_data=our_todo)()
+            elif path == '/tmp/git-rebase-todo' and mode == 'w':
+                m = mock.MagicMock()
+                m.__enter__ = mock.Mock(return_value=m)
+                m.__exit__ = mock.Mock(return_value=False)
+                m.write = lambda data: written.append(data)
+                m.writelines = lambda lines: written.extend(lines)
+                return m
+            return mock.mock_open()()
+
+        with mock.patch('os.path.exists', return_value=True):
+            with mock.patch('builtins.open', side_effect=open_side_effect):
+                rc = sequence_editor_command(args)
+
+        self.assertEqual(rc, 0)
+        full_output = ''.join(written)
+        # Our todo content is included
+        self.assertIn("pick abc First", full_output)
+        self.assertIn("exec git p4son new feat", full_output)
+        # Git's comment lines are preserved
+        self.assertIn("# Commands:", full_output)
+        self.assertIn("# p, pick <commit> = use commit", full_output)
+        # Non-comment lines from git's original are NOT included
+        self.assertNotIn("pick abc1234 First commit", full_output)
+
+    @mock.patch('git_p4son.review.subprocess.run')
+    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
     def test_editor_with_args(self, _mock_ws, mock_subprocess_run):
         """Editor commands like 'code --wait' should be split properly."""
         todo_content = "pick abc First\n"

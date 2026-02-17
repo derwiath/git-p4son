@@ -171,13 +171,21 @@ def sequence_editor_command(args: argparse.Namespace) -> int:
               file=sys.stderr)
         return 1
 
+    # Read the original git todo file to preserve comment lines
+    with open(args.filename, 'r') as f:
+        original_lines = f.readlines()
+    comment_lines = [line for line in original_lines if line.startswith('#')]
+
     # Read our generated todo
     with open(todo_file, 'r') as f:
         todo_content = f.read()
 
-    # Overwrite the rebase todo file with our version
+    # Overwrite the rebase todo file with our version plus git's comments
     with open(args.filename, 'w') as f:
         f.write(todo_content)
+        if comment_lines:
+            f.write('\n')
+            f.writelines(comment_lines)
 
     # Resolve the user's editor via git var GIT_EDITOR
     result = subprocess.run(
