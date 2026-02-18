@@ -9,7 +9,7 @@ from timeit import default_timer as timer
 from datetime import timedelta
 from typing import IO
 
-from .common import CommandError, run, run_with_output
+from .common import CommandError, RunError, run, run_with_output
 from .changelist_store import resolve_changelist
 
 
@@ -155,7 +155,7 @@ def p4_sync(changelist: int, force: bool, workspace_dir: str) -> bool:
                         (changelist)], cwd=workspace_dir, on_output=output_processor)
         output_processor.print_stats()
         return True
-    except CommandError as e:
+    except RunError as e:
         output_processor.print_stats()
         writable_files = get_writable_files(e.stderr)
         if not writable_files:

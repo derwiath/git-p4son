@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 
-from git_p4son.common import CommandError
+from git_p4son.common import CommandError, RunError
 from git_p4son.lib import (
     create_changelist,
     extract_description_lines,
@@ -143,8 +143,8 @@ class TestCreateChangelist(unittest.TestCase):
     @mock.patch('git_p4son.lib.get_enumerated_commit_lines_since')
     def test_p4_failure(self, mock_get_lines, mock_run):
         mock_get_lines.return_value = ['1. Commit']
-        mock_run.side_effect = CommandError('p4 change failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('p4 change failed')
+        with self.assertRaises(RunError):
             create_changelist('Msg', 'HEAD~1', '/ws')
 
 
@@ -158,8 +158,8 @@ class TestGetChangelistSpec(unittest.TestCase):
 
     @mock.patch('git_p4son.lib.run')
     def test_failure(self, mock_run):
-        mock_run.side_effect = CommandError('Changelist not found')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('Changelist not found')
+        with self.assertRaises(RunError):
             get_changelist_spec('99999', '/ws')
 
 

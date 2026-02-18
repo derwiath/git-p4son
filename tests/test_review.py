@@ -4,7 +4,7 @@ import os
 import unittest
 from unittest import mock
 
-from git_p4son.common import CommandError
+from git_p4son.common import CommandError, RunError
 from git_p4son.review import (
     _generate_todo,
     _get_commit_lines,
@@ -78,8 +78,8 @@ class TestGetCommitLines(unittest.TestCase):
 
     @mock.patch('git_p4son.review.run')
     def test_failure(self, mock_run):
-        mock_run.side_effect = CommandError('git log failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('git log failed')
+        with self.assertRaises(RunError):
             _get_commit_lines('main', '/workspace')
 
 

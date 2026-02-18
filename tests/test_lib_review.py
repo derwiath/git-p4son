@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 
-from git_p4son.common import CommandError
+from git_p4son.common import CommandError, RunError
 from git_p4son.lib import (
     p4_shelve_changelist,
     add_review_keyword_to_changelist,
@@ -23,8 +23,8 @@ class TestP4ShelveChangelist(unittest.TestCase):
 
     @mock.patch('git_p4son.lib.run')
     def test_failure(self, mock_run):
-        mock_run.side_effect = CommandError('shelve failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('shelve failed')
+        with self.assertRaises(RunError):
             p4_shelve_changelist('100', '/ws')
 
     @mock.patch('git_p4son.lib.run')
@@ -85,8 +85,8 @@ class TestP4AddReviewKeywordToChangelist(unittest.TestCase):
 
     @mock.patch('git_p4son.lib.run')
     def test_get_spec_failure(self, mock_run):
-        mock_run.side_effect = CommandError('p4 change failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('p4 change failed')
+        with self.assertRaises(RunError):
             add_review_keyword_to_changelist('100', '/ws')
 
     @mock.patch('git_p4son.lib.run')

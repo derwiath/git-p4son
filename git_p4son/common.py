@@ -65,11 +65,18 @@ def ensure_workspace() -> str:
 
 
 class CommandError(Exception):
+    """Raised for logic/validation errors in commands."""
+
+    def __init__(self, message: str, returncode: int = 1) -> None:
+        super().__init__(message)
+        self.returncode = returncode
+
+
+class RunError(CommandError):
     """Raised when a subprocess command fails."""
 
     def __init__(self, message: str, returncode: int = 1, stderr: list[str] | None = None) -> None:
-        super().__init__(message)
-        self.returncode = returncode
+        super().__init__(message, returncode)
         self.stderr = stderr or []
 
 
@@ -124,7 +131,7 @@ def run(command: list[str], cwd: str = '.', dry_run: bool = False,
     print('Elapsed time is', timedelta(seconds=end_timestamp - start_timestamp))
 
     if result.returncode != 0:
-        raise CommandError(
+        raise RunError(
             join_command_line(command),
             returncode=result.returncode,
             stderr=result.stderr.splitlines(),
@@ -241,7 +248,7 @@ def run_with_output(command: list[str], cwd: str = '.', on_output: Callable[...,
     print('Elapsed time is', timedelta(seconds=end_timestamp - start_timestamp))
 
     if returncode != 0:
-        raise CommandError(
+        raise RunError(
             join_command_line(command),
             returncode=returncode,
             stderr=stderr_lines,

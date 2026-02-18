@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 
-from git_p4son.common import CommandError
+from git_p4son.common import CommandError, RunError
 from git_p4son.list_changes import (
     get_commit_subjects_since,
     get_enumerated_change_description_since,
@@ -35,8 +35,8 @@ class TestGetCommitSubjectsSince(unittest.TestCase):
 
     @mock.patch('git_p4son.list_changes.run')
     def test_failure(self, mock_run):
-        mock_run.side_effect = CommandError('git log failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('git log failed')
+        with self.assertRaises(RunError):
             get_commit_subjects_since('main', '/workspace')
 
     @mock.patch('git_p4son.list_changes.run')
@@ -74,8 +74,8 @@ class TestGetEnumeratedCommitLinesSince(unittest.TestCase):
 
     @mock.patch('git_p4son.list_changes.run')
     def test_failure(self, mock_run):
-        mock_run.side_effect = CommandError('git log failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('git log failed')
+        with self.assertRaises(RunError):
             get_enumerated_commit_lines_since('main', '/ws')
 
 

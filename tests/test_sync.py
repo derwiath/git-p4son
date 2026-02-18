@@ -4,7 +4,7 @@ import sys
 import unittest
 from unittest import mock
 
-from git_p4son.common import CommandError
+from git_p4son.common import CommandError, RunError
 from git_p4son.sync import (
     P4SyncOutputProcessor,
     echo_output_to_stream,
@@ -81,8 +81,8 @@ class TestGitIsWorkspaceClean(unittest.TestCase):
 
     @mock.patch('git_p4son.sync.run_with_output')
     def test_command_failure(self, mock_rwo):
-        mock_rwo.side_effect = CommandError('git status failed')
-        with self.assertRaises(CommandError):
+        mock_rwo.side_effect = RunError('git status failed')
+        with self.assertRaises(RunError):
             git_is_workspace_clean('/ws')
 
 
@@ -101,8 +101,8 @@ class TestP4IsWorkspaceClean(unittest.TestCase):
 
     @mock.patch('git_p4son.sync.run_with_output')
     def test_command_failure(self, mock_rwo):
-        mock_rwo.side_effect = CommandError('p4 opened failed')
-        with self.assertRaises(CommandError):
+        mock_rwo.side_effect = RunError('p4 opened failed')
+        with self.assertRaises(RunError):
             p4_is_workspace_clean('/ws')
 
 
@@ -114,8 +114,8 @@ class TestGitAddAllFiles(unittest.TestCase):
 
     @mock.patch('git_p4son.sync.run_with_output')
     def test_failure(self, mock_rwo):
-        mock_rwo.side_effect = CommandError('git add failed')
-        with self.assertRaises(CommandError):
+        mock_rwo.side_effect = RunError('git add failed')
+        with self.assertRaises(RunError):
             git_add_all_files('/ws')
 
 
@@ -184,8 +184,8 @@ class TestGitChangelistOfLastSync(unittest.TestCase):
 
     @mock.patch('git_p4son.sync.run_with_output')
     def test_command_failure(self, mock_rwo):
-        mock_rwo.side_effect = CommandError('git log failed')
-        with self.assertRaises(CommandError):
+        mock_rwo.side_effect = RunError('git log failed')
+        with self.assertRaises(RunError):
             git_changelist_of_last_sync('/ws')
 
     @mock.patch('git_p4son.sync.run_with_output')
@@ -215,8 +215,8 @@ class TestGetLatestChangelistAffectingWorkspace(unittest.TestCase):
 
     @mock.patch('git_p4son.sync.run')
     def test_p4_info_failure(self, mock_run):
-        mock_run.side_effect = CommandError('p4 info failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('p4 info failed')
+        with self.assertRaises(RunError):
             get_latest_changelist_affecting_workspace('/ws')
 
     @mock.patch('git_p4son.sync.run')
@@ -249,8 +249,8 @@ class TestGetFileCountToSync(unittest.TestCase):
 
     @mock.patch('git_p4son.sync.run')
     def test_failure(self, mock_run):
-        mock_run.side_effect = CommandError('p4 sync -n failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('p4 sync -n failed')
+        with self.assertRaises(RunError):
             get_file_count_to_sync(12345, '/ws')
 
 
@@ -289,8 +289,8 @@ class TestP4Sync(unittest.TestCase):
 
     @mock.patch('git_p4son.sync.run')
     def test_count_failure(self, mock_run):
-        mock_run.side_effect = CommandError('p4 sync -n failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('p4 sync -n failed')
+        with self.assertRaises(RunError):
             p4_sync(12345, False, '/ws')
 
 

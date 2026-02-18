@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 
-from git_p4son.common import CommandError
+from git_p4son.common import CommandError, RunError
 from git_p4son.lib import (
     LocalChanges,
     check_file_status,
@@ -56,8 +56,8 @@ class TestFindCommonAncestor(unittest.TestCase):
 
     @mock.patch('git_p4son.lib.run')
     def test_failure(self, mock_run):
-        mock_run.side_effect = CommandError('merge-base failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('merge-base failed')
+        with self.assertRaises(RunError):
             find_common_ancestor('main', 'HEAD', '/ws')
 
     @mock.patch('git_p4son.lib.run')
@@ -89,8 +89,8 @@ class TestGetLocalGitChanges(unittest.TestCase):
 
     @mock.patch('git_p4son.lib.run')
     def test_merge_base_failure(self, mock_run):
-        mock_run.side_effect = CommandError('merge-base failed')
-        with self.assertRaises(CommandError):
+        mock_run.side_effect = RunError('merge-base failed')
+        with self.assertRaises(RunError):
             get_local_git_changes('main', '/ws')
 
     @mock.patch('git_p4son.lib.run')
@@ -198,8 +198,8 @@ class TestOpenChangesForEdit(unittest.TestCase):
 
     @mock.patch('git_p4son.lib.get_local_git_changes')
     def test_get_changes_failure(self, mock_get_changes):
-        mock_get_changes.side_effect = CommandError('get changes failed')
-        with self.assertRaises(CommandError):
+        mock_get_changes.side_effect = RunError('get changes failed')
+        with self.assertRaises(RunError):
             open_changes_for_edit('100', 'HEAD~1', '/ws')
 
 

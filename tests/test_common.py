@@ -8,6 +8,7 @@ from unittest import mock
 
 from git_p4son.common import (
     CommandError,
+    RunError,
     RunResult,
     branch_to_alias,
     get_current_branch,
@@ -142,13 +143,13 @@ class TestRun(unittest.TestCase):
         self.assertEqual(result.stderr, [])
 
     @mock.patch('subprocess.run')
-    def test_nonzero_returncode_raises(self, mock_subprocess_run):
+    def test_nonzero_returncode_raises_run_error(self, mock_subprocess_run):
         mock_subprocess_run.return_value = mock.Mock(
             returncode=1,
             stdout='',
             stderr='error\n',
         )
-        with self.assertRaises(CommandError) as ctx:
+        with self.assertRaises(RunError) as ctx:
             run(['p4', 'info'])
         self.assertEqual(ctx.exception.returncode, 1)
         self.assertEqual(ctx.exception.stderr, ['error'])
@@ -195,6 +196,37 @@ class TestRunWithOutput(unittest.TestCase):
         callback_lines = [call.kwargs.get('line', call.args[0] if call.args else None)
                           for call in callback.call_args_list]
         self.assertIn('hello', callback_lines)
+
+
+class TestCommandError(unittest.TestCase):
+    def test_message_and_returncode(self):
+        e = CommandError('something went wrong', returncode=2)
+        self.assertEqual(str(e), 'something went wrong')
+        self.assertEqual(e.returncode, 2)
+
+    def test_default_returncode(self):
+        e = CommandError('oops')
+        self.assertEqual(e.returncode, 1)
+
+    def test_no_stderr_attribute(self):
+        e = CommandError('oops')
+        self.assertFalse(hasattr(e, 'stderr'))
+
+
+class TestRunError(unittest.TestCase):
+    def test_is_command_error_subclass(self):
+        e = RunError('cmd failed', returncode=3, stderr=['err'])
+        self.assertIsInstance(e, CommandError)
+
+    def test_fields(self):
+        e = RunError('cmd failed', returncode=3, stderr=['line1', 'line2'])
+        self.assertEqual(str(e), 'cmd failed')
+        self.assertEqual(e.returncode, 3)
+        self.assertEqual(e.stderr, ['line1', 'line2'])
+
+    def test_default_stderr(self):
+        e = RunError('cmd failed')
+        self.assertEqual(e.stderr, [])
 
 
 if __name__ == '__main__':

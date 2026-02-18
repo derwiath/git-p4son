@@ -57,7 +57,6 @@ def create_changelist(message: str, base_branch: str, workspace_dir: str, dry_ru
 
     raise CommandError(
         'Failed to extract changelist number from p4 change output',
-        stderr=result.stdout,
     )
 
 
