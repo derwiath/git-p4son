@@ -4,7 +4,7 @@ List-changes command implementation for git-p4son.
 
 import argparse
 import sys
-from .common import ensure_workspace, run
+from .common import run
 
 
 def get_commit_subjects_since(base_branch: str, workspace_dir: str) -> tuple[int, list[str] | None]:
@@ -96,7 +96,7 @@ def list_changes_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     returncode, description = get_enumerated_change_description_since(
         args.base_branch, workspace_dir)

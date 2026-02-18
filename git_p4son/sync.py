@@ -12,7 +12,7 @@ from timeit import default_timer as timer
 from datetime import timedelta
 from typing import IO
 
-from .common import ensure_workspace, run, run_with_output
+from .common import run, run_with_output
 from .changelist_store import resolve_changelist
 
 
@@ -288,7 +288,7 @@ def sync_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     if not git_is_workspace_clean(workspace_dir):
         print('git status shows that workspace is not clean, aborting')

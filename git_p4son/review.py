@@ -10,7 +10,7 @@ import os
 import shlex
 import subprocess
 import sys
-from .common import ensure_workspace, run
+from .common import run
 
 
 def _reviews_dir(workspace_dir: str) -> str:
@@ -88,7 +88,7 @@ def review_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     # Check alias availability before starting
     if not args.dry_run:
@@ -163,7 +163,7 @@ def sequence_editor_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
     todo_file = _todo_path(workspace_dir)
 
     if not os.path.exists(todo_file):

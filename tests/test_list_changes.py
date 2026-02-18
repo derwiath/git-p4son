@@ -117,21 +117,19 @@ class TestGetEnumeratedChangeDescriptionSince(unittest.TestCase):
 
 
 class TestListChangesCommand(unittest.TestCase):
-    @mock.patch('git_p4son.list_changes.ensure_workspace', return_value='/ws')
     @mock.patch('git_p4son.list_changes.run')
-    def test_success(self, mock_run, _mock_ws):
+    def test_success(self, mock_run):
         mock_run.return_value = make_run_result(stdout=[
             'aaa Fix something',
         ])
-        args = mock.Mock(base_branch='HEAD~1')
+        args = mock.Mock(base_branch='HEAD~1', workspace_dir='/ws')
         rc = list_changes_command(args)
         self.assertEqual(rc, 0)
 
-    @mock.patch('git_p4son.list_changes.ensure_workspace', return_value='/ws')
     @mock.patch('git_p4son.list_changes.run')
-    def test_no_changes(self, mock_run, _mock_ws):
+    def test_no_changes(self, mock_run):
         mock_run.return_value = make_run_result(stdout=[])
-        args = mock.Mock(base_branch='HEAD~1')
+        args = mock.Mock(base_branch='HEAD~1', workspace_dir='/ws')
         rc = list_changes_command(args)
         self.assertEqual(rc, 0)
 

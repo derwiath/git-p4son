@@ -12,7 +12,7 @@ from .update import update_command
 from .list_changes import list_changes_command
 from .alias import alias_command
 from .review import review_command, sequence_editor_command
-from .common import branch_to_alias, get_current_branch, get_workspace_dir
+from .common import branch_to_alias, get_current_branch, get_workspace_dir, ensure_workspace
 from .complete import run_complete
 
 
@@ -277,7 +277,7 @@ Examples:
     return parser
 
 
-def _resolve_branch_keyword(value: str) -> str | None:
+def _resolve_branch_keyword(value: str, workspace_dir: str) -> str | None:
     """Resolve @branch to the branch-derived alias name.
 
     Returns the resolved alias name, or None if resolution fails.
@@ -285,10 +285,6 @@ def _resolve_branch_keyword(value: str) -> str | None:
     """
     if value != '@branch':
         return value
-    workspace_dir = get_workspace_dir()
-    if not workspace_dir:
-        print('Error: not in a git workspace', file=sys.stderr)
-        return None
     branch = get_current_branch(workspace_dir)
     if not branch or branch == 'main':
         print('Error: @branch cannot be used on main or detached HEAD',
@@ -301,7 +297,7 @@ def _resolve_branch_alias(args: argparse.Namespace) -> int | None:
     """Resolve @branch in args.alias. Returns error code or None on success."""
     if getattr(args, 'alias', None) != '@branch':
         return None
-    resolved = _resolve_branch_keyword('@branch')
+    resolved = _resolve_branch_keyword('@branch', args.workspace_dir)
     if resolved is None:
         return 1
     args.alias = resolved
@@ -309,19 +305,21 @@ def _resolve_branch_alias(args: argparse.Namespace) -> int | None:
 
 
 def run_command(args: argparse.Namespace) -> int:
+    args.workspace_dir = ensure_workspace()
+
     if args.command in ('new', 'review'):
         error = _resolve_branch_alias(args)
         if error is not None:
             return error
 
     if args.command == 'update':
-        resolved = _resolve_branch_keyword(args.changelist)
+        resolved = _resolve_branch_keyword(args.changelist, args.workspace_dir)
         if resolved is None:
             return 1
         args.changelist = resolved
 
     if args.command == 'alias' and args.alias_action == 'set':
-        resolved = _resolve_branch_keyword(args.alias)
+        resolved = _resolve_branch_keyword(args.alias, args.workspace_dir)
         if resolved is None:
             return 1
         args.alias = resolved

@@ -4,7 +4,6 @@ Alias command implementation for git-p4son.
 
 import argparse
 import sys
-from .common import ensure_workspace
 from .changelist_store import (
     save_changelist_alias,
     list_changelist_aliases,
@@ -22,7 +21,7 @@ def alias_list_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     aliases = list_changelist_aliases(workspace_dir)
     if not aliases:
@@ -45,7 +44,7 @@ def alias_set_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     if not args.changelist.isdigit():
         print(f'Invalid changelist number: {args.changelist}', file=sys.stderr)
@@ -69,7 +68,7 @@ def alias_delete_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     if not delete_changelist_alias(args.alias, workspace_dir):
         return 1
@@ -88,7 +87,7 @@ def alias_clean_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     aliases = list_changelist_aliases(workspace_dir)
     if not aliases:

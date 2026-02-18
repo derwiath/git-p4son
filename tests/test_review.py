@@ -87,8 +87,7 @@ class TestGetCommitLines(unittest.TestCase):
 class TestReviewCommand(unittest.TestCase):
     @mock.patch('git_p4son.review.subprocess.run')
     @mock.patch('git_p4son.review.run')
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_success(self, _mock_ws, mock_run, mock_subprocess_run):
+    def test_success(self, mock_run, mock_subprocess_run):
         mock_run.return_value = make_run_result(stdout=[
             'abc1234 First commit',
             'def5678 Second commit',
@@ -101,6 +100,7 @@ class TestReviewCommand(unittest.TestCase):
             base_branch='main',
             force=False,
             dry_run=False,
+            workspace_dir='/workspace',
         )
 
         with mock.patch('os.path.exists', return_value=False):
@@ -119,8 +119,7 @@ class TestReviewCommand(unittest.TestCase):
         )
 
     @mock.patch('git_p4son.review.run')
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_no_commits(self, _mock_ws, mock_run):
+    def test_no_commits(self, mock_run):
         mock_run.return_value = make_run_result(stdout=[])
         args = mock.Mock(
             alias='my-feature',
@@ -128,28 +127,28 @@ class TestReviewCommand(unittest.TestCase):
             base_branch='main',
             force=False,
             dry_run=False,
+            workspace_dir='/workspace',
         )
         with mock.patch('os.path.exists', return_value=False):
             rc = review_command(args)
         self.assertEqual(rc, 1)
 
     @mock.patch('git_p4son.review.run')
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_existing_alias_without_force(self, _mock_ws, mock_run):
+    def test_existing_alias_without_force(self, mock_run):
         args = mock.Mock(
             alias='my-feature',
             message='My feature',
             base_branch='main',
             force=False,
             dry_run=False,
+            workspace_dir='/workspace',
         )
         with mock.patch('os.path.exists', return_value=True):
             rc = review_command(args)
         self.assertEqual(rc, 1)
 
     @mock.patch('git_p4son.review.run')
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_dry_run_prints_todo(self, _mock_ws, mock_run):
+    def test_dry_run_prints_todo(self, mock_run):
         mock_run.return_value = make_run_result(stdout=[
             'abc1234 First commit',
             'def5678 Second commit',
@@ -160,14 +159,14 @@ class TestReviewCommand(unittest.TestCase):
             base_branch='main',
             force=False,
             dry_run=True,
+            workspace_dir='/workspace',
         )
         rc = review_command(args)
         self.assertEqual(rc, 0)
 
     @mock.patch('git_p4son.review.subprocess.run')
     @mock.patch('git_p4son.review.run')
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_rebase_failure(self, _mock_ws, mock_run, mock_subprocess_run):
+    def test_rebase_failure(self, mock_run, mock_subprocess_run):
         mock_run.return_value = make_run_result(stdout=[
             'abc1234 First commit',
         ])
@@ -179,6 +178,7 @@ class TestReviewCommand(unittest.TestCase):
             base_branch='main',
             force=False,
             dry_run=False,
+            workspace_dir='/workspace',
         )
 
         with mock.patch('os.path.exists', return_value=False):
@@ -192,8 +192,7 @@ class TestReviewCommand(unittest.TestCase):
 
 class TestSequenceEditorCommand(unittest.TestCase):
     @mock.patch('git_p4son.review.subprocess.run')
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_success(self, _mock_ws, mock_subprocess_run):
+    def test_success(self, mock_subprocess_run):
         todo_content = "pick abc First\nexec git p4son new feat --review -m 'msg'\n"
 
         # First call: git var GIT_EDITOR
@@ -203,7 +202,8 @@ class TestSequenceEditorCommand(unittest.TestCase):
             mock.Mock(returncode=0),
         ]
 
-        args = mock.Mock(filename='/tmp/git-rebase-todo')
+        args = mock.Mock(filename='/tmp/git-rebase-todo',
+                         workspace_dir='/workspace')
         todo_file = os.path.join('/workspace', '.git-p4son', 'reviews', 'todo')
 
         with mock.patch('os.path.exists', return_value=True):
@@ -218,16 +218,15 @@ class TestSequenceEditorCommand(unittest.TestCase):
         second_call = mock_subprocess_run.call_args_list[1]
         self.assertEqual(second_call[0][0], ['vim', '/tmp/git-rebase-todo'])
 
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_missing_todo_file(self, _mock_ws):
-        args = mock.Mock(filename='/tmp/git-rebase-todo')
+    def test_missing_todo_file(self):
+        args = mock.Mock(filename='/tmp/git-rebase-todo',
+                         workspace_dir='/workspace')
         with mock.patch('os.path.exists', return_value=False):
             rc = sequence_editor_command(args)
         self.assertEqual(rc, 1)
 
     @mock.patch('git_p4son.review.subprocess.run')
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_preserves_git_comments(self, _mock_ws, mock_subprocess_run):
+    def test_preserves_git_comments(self, mock_subprocess_run):
         """Comment lines from git's original todo file are preserved."""
         git_original = (
             "pick abc1234 First commit\n"
@@ -244,7 +243,8 @@ class TestSequenceEditorCommand(unittest.TestCase):
             mock.Mock(returncode=0),
         ]
 
-        args = mock.Mock(filename='/tmp/git-rebase-todo')
+        args = mock.Mock(filename='/tmp/git-rebase-todo',
+                         workspace_dir='/workspace')
         todo_file = os.path.join('/workspace', '.git-p4son', 'reviews', 'todo')
 
         written = []
@@ -279,8 +279,7 @@ class TestSequenceEditorCommand(unittest.TestCase):
         self.assertNotIn("pick abc1234 First commit", full_output)
 
     @mock.patch('git_p4son.review.subprocess.run')
-    @mock.patch('git_p4son.review.ensure_workspace', return_value='/workspace')
-    def test_editor_with_args(self, _mock_ws, mock_subprocess_run):
+    def test_editor_with_args(self, mock_subprocess_run):
         """Editor commands like 'code --wait' should be split properly."""
         todo_content = "pick abc First\n"
         mock_subprocess_run.side_effect = [
@@ -288,7 +287,8 @@ class TestSequenceEditorCommand(unittest.TestCase):
             mock.Mock(returncode=0),
         ]
 
-        args = mock.Mock(filename='/tmp/git-rebase-todo')
+        args = mock.Mock(filename='/tmp/git-rebase-todo',
+                         workspace_dir='/workspace')
         with mock.patch('os.path.exists', return_value=True):
             with mock.patch('builtins.open', mock.mock_open(read_data=todo_content)):
                 rc = sequence_editor_command(args)

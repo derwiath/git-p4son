@@ -8,7 +8,6 @@ creates a Swarm review.
 import argparse
 import os
 import sys
-from .common import ensure_workspace
 from .changelist_store import save_changelist_alias
 from .lib import (
     create_changelist,
@@ -31,7 +30,7 @@ def new_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     # Check alias availability before creating the changelist
     if args.alias and not args.dry_run:

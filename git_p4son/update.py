@@ -6,7 +6,6 @@ and optionally re-shelves.
 """
 
 import argparse
-from .common import ensure_workspace
 from .changelist_store import resolve_changelist
 from .lib import (
     update_changelist,
@@ -28,7 +27,7 @@ def update_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    workspace_dir = ensure_workspace()
+    workspace_dir = args.workspace_dir
 
     changelist = resolve_changelist(args.changelist, workspace_dir)
     if changelist is None:
