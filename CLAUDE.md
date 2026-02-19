@@ -26,8 +26,11 @@ python -m pytest tests/
 
 Format code with `autopep8`:
 ```bash
-autopep8 --in-place <file>
+autopep8 -i -r git_p4son/ tests/
 ```
+
+**Important:** Before committing, always run `autopep8 -i -r git_p4son/ tests/` to format all changed code. The
+project must stay PEP 8 compliant at all times.
 
 ## Architecture
 
