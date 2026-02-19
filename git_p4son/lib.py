@@ -29,7 +29,8 @@ def create_changelist(message: str, base_branch: str, workspace_dir: str, dry_ru
         The changelist number as a string, or None for dry run.
     """
     # Build description: user message + enumerated commits
-    commit_lines = get_enumerated_commit_lines_since(base_branch, workspace_dir)
+    commit_lines = get_enumerated_commit_lines_since(
+        base_branch, workspace_dir)
 
     description_lines = message.splitlines()
     if commit_lines:

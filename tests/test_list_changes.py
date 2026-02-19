@@ -55,7 +55,8 @@ class TestGetEnumeratedCommitLinesSince(unittest.TestCase):
             'c333333 Update docs',
         ])
         lines = get_enumerated_commit_lines_since('main', '/ws')
-        self.assertEqual(lines, ['1. Add feature', '2. Fix bug', '3. Update docs'])
+        self.assertEqual(
+            lines, ['1. Add feature', '2. Fix bug', '3. Update docs'])
 
     @mock.patch('git_p4son.list_changes.run')
     def test_no_commits_returns_empty_list(self, mock_run):
@@ -69,7 +70,8 @@ class TestGetEnumeratedCommitLinesSince(unittest.TestCase):
             'a111111 New commit A',
             'b222222 New commit B',
         ])
-        lines = get_enumerated_commit_lines_since('main', '/ws', start_number=4)
+        lines = get_enumerated_commit_lines_since(
+            'main', '/ws', start_number=4)
         self.assertEqual(lines, ['4. New commit A', '5. New commit B'])
 
     @mock.patch('git_p4son.list_changes.run')
@@ -102,7 +104,8 @@ class TestGetEnumeratedChangeDescriptionSince(unittest.TestCase):
             'a111111 New commit A',
             'b222222 New commit B',
         ])
-        desc = get_enumerated_change_description_since('main', '/ws', start_number=4)
+        desc = get_enumerated_change_description_since(
+            'main', '/ws', start_number=4)
         self.assertEqual(desc, '4. New commit A\n5. New commit B')
 
 

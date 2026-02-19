@@ -17,7 +17,8 @@ from tests.helpers import make_run_result
 class TestGenerateTodo(unittest.TestCase):
     def test_single_commit(self):
         commit_lines = ['abc1234 First commit']
-        result = _generate_todo(commit_lines, 'my-feature', 'My feature', force=False)
+        result = _generate_todo(
+            commit_lines, 'my-feature', 'My feature', force=False)
         self.assertEqual(result, (
             "pick abc1234 First commit\n"
             "exec git p4son new my-feature --review -m 'My feature'\n"
@@ -29,7 +30,8 @@ class TestGenerateTodo(unittest.TestCase):
             'def5678 Second commit',
             'ghi9012 Third commit',
         ]
-        result = _generate_todo(commit_lines, 'my-feature', 'My feature', force=False)
+        result = _generate_todo(
+            commit_lines, 'my-feature', 'My feature', force=False)
         self.assertEqual(result, (
             "pick abc1234 First commit\n"
             "exec git p4son new my-feature --review -m 'My feature' --sleep 5\n"
@@ -41,7 +43,8 @@ class TestGenerateTodo(unittest.TestCase):
 
     def test_force_flag(self):
         commit_lines = ['abc1234 First commit']
-        result = _generate_todo(commit_lines, 'my-feature', 'My feature', force=True)
+        result = _generate_todo(
+            commit_lines, 'my-feature', 'My feature', force=True)
         self.assertEqual(result, (
             "pick abc1234 First commit\n"
             "exec git p4son new my-feature --review -m 'My feature' --force\n"
@@ -49,7 +52,8 @@ class TestGenerateTodo(unittest.TestCase):
 
     def test_message_with_quotes(self):
         commit_lines = ['abc1234 First commit']
-        result = _generate_todo(commit_lines, 'feat', "It's a feature", force=False)
+        result = _generate_todo(commit_lines, 'feat',
+                                "It's a feature", force=False)
         # shlex.quote wraps in quotes and escapes the apostrophe
         self.assertIn('exec git p4son new feat --review -m', result)
         # The result should be shell-safe (shlex.quote handles escaping)
@@ -70,7 +74,8 @@ class TestGetCommitLines(unittest.TestCase):
             'def5678 Second commit',
         ])
         lines = _get_commit_lines('main', '/workspace')
-        self.assertEqual(lines, ['abc1234 First commit', 'def5678 Second commit'])
+        self.assertEqual(
+            lines, ['abc1234 First commit', 'def5678 Second commit'])
         mock_run.assert_called_once_with(
             ['git', 'log', '--oneline', '--reverse', 'main..HEAD'],
             cwd='/workspace',
@@ -294,7 +299,8 @@ class TestSequenceEditorCommand(unittest.TestCase):
 
         self.assertEqual(rc, 0)
         second_call = mock_subprocess_run.call_args_list[1]
-        self.assertEqual(second_call[0][0], ['code', '--wait', '/tmp/git-rebase-todo'])
+        self.assertEqual(second_call[0][0], [
+                         'code', '--wait', '/tmp/git-rebase-todo'])
 
 
 if __name__ == '__main__':

@@ -362,7 +362,8 @@ class TestSyncCommand(unittest.TestCase):
     @mock.patch('git_p4son.sync.p4_is_workspace_clean', return_value=True)
     @mock.patch('git_p4son.sync.git_is_workspace_clean', return_value=True)
     def test_last_synced(self, _git_clean, _p4clean, _last_cl, mock_p4sync):
-        args = mock.Mock(changelist='last-synced', force=False, workspace_dir='/ws')
+        args = mock.Mock(changelist='last-synced',
+                         force=False, workspace_dir='/ws')
         rc = sync_command(args)
         self.assertEqual(rc, 0)
         mock_p4sync.assert_called_once_with(100, False, '/ws')
