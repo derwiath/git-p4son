@@ -1,5 +1,8 @@
 {
     "test": {
         "cmd": "python -m pytest tests/"
+    },
+    "format": {
+        "cmd": "autopep8 -i -r git_p4son/ tests/"
     }
 }
