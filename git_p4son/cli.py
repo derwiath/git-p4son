@@ -14,6 +14,7 @@ from .alias import alias_command
 from .review import review_command, sequence_editor_command
 from .changelist_store import RESERVED_KEYWORDS
 from .common import CommandError, RunError, branch_to_alias, get_current_branch, get_workspace_dir
+from .log import log
 from .complete import run_complete
 
 
@@ -43,6 +44,13 @@ Examples:
         '--version',
         action='version',
         version=f'git-p4son {__version__}'
+    )
+
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        default=False,
+        help='Show verbose output (commands, elapsed times, raw subprocess output)'
     )
 
     subparsers = parser.add_subparsers(
@@ -288,13 +296,11 @@ def _resolve_branch_keyword(value: str, workspace_dir: str) -> str | None:
         return value
     branch = get_current_branch(workspace_dir)
     if not branch or branch == 'main':
-        print('Error: "branch" keyword cannot be used on main or detached HEAD',
-              file=sys.stderr)
+        log.error('"branch" keyword cannot be used on main or detached HEAD')
         return None
     alias = branch_to_alias(branch)
     if alias in RESERVED_KEYWORDS:
-        print(f'Error: branch "{branch}" resolves to reserved keyword "{alias}"',
-              file=sys.stderr)
+        log.error(f'branch "{branch}" resolves to reserved keyword "{alias}"')
         return None
     return alias
 
@@ -311,23 +317,33 @@ def _resolve_branch_alias(args: argparse.Namespace) -> int | None:
 
 
 def run_command(args: argparse.Namespace) -> int:
+    log.heading('Finding workspace directory')
     args.workspace_dir = get_workspace_dir()
     if not args.workspace_dir:
-        print('Failed to find workspace root directory', file=sys.stderr)
+        log.error('No .git directory found in current or parent directories')
         return 1
+    log.detail('root', args.workspace_dir)
 
     if args.command in ('new', 'review'):
+        if getattr(args, 'alias', None) == 'branch':
+            log.heading('Resolving alias from current git branch')
         error = _resolve_branch_alias(args)
         if error is not None:
             return error
+        if getattr(args, 'alias', None) and args.alias != 'branch':
+            log.detail('alias', args.alias)
 
     if args.command == 'update':
+        if args.changelist == 'branch':
+            log.heading('Resolving alias from current git branch')
         resolved = _resolve_branch_keyword(args.changelist, args.workspace_dir)
         if resolved is None:
             return 1
         args.changelist = resolved
 
     if args.command == 'alias' and args.alias_action == 'set':
+        if args.alias == 'branch':
+            log.heading('Resolving alias from current git branch')
         resolved = _resolve_branch_keyword(args.alias, args.workspace_dir)
         if resolved is None:
             return 1
@@ -348,7 +364,7 @@ def run_command(args: argparse.Namespace) -> int:
     elif args.command == '_sequence-editor':
         return sequence_editor_command(args)
     else:
-        print(f'Unknown command: {args.command}', file=sys.stderr)
+        log.error(f'Unknown command: {args.command}')
         return 1
 
 
@@ -369,28 +385,32 @@ def main() -> int:
         parser.print_help()
         return 1
 
+    log.verbose_mode = args.verbose
+
     try:
         exit_code = run_command(args)
 
         if exit_code == 0 and getattr(args, 'sleep', None) is not None:
             seconds = int(args.sleep)
-            print(f'Sleeping for {seconds} seconds')
+            log.info(f'Sleeping for {seconds} seconds')
             time.sleep(seconds)
 
         return exit_code
     except KeyboardInterrupt:
-        print('\nOperation cancelled by user', file=sys.stderr)
+        log.error('\nOperation cancelled by user')
         return 1
     except RunError as e:
-        for line in e.stderr:
-            print(line, file=sys.stderr)
-        print(f'Command failed with exit code {e.returncode}', file=sys.stderr)
+        if e.stderr:
+            log.error(e.stderr[0])
+            for line in e.stderr[1:]:
+                log.verbose(line)
+        log.fail(e.returncode)
         return e.returncode
     except CommandError as e:
-        print(str(e), file=sys.stderr)
+        log.error(str(e))
         return e.returncode
     except Exception as e:
-        print(f'Error: {e}', file=sys.stderr)
+        log.error(str(e))
         return 1
 
 

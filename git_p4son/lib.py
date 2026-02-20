@@ -8,6 +8,7 @@ shelving, and Swarm review integration.
 import re
 from .common import CommandError, run
 from .list_changes import get_enumerated_commit_lines_since
+from .log import log
 
 
 # ---------------------------------------------------------------------------
@@ -37,8 +38,8 @@ def create_changelist(message: str, base_branch: str, workspace_dir: str, dry_ru
         description_lines += ['', 'Changes included:'] + commit_lines
 
     if dry_run:
-        print(f"Would create new changelist with description:")
-        print('\n'.join(description_lines))
+        log.info("Would create new changelist with description:")
+        log.info('\n'.join(description_lines))
         return None
 
     # Prepare the changelist spec content
@@ -218,8 +219,8 @@ def update_changelist(changelist_nr: str, base_branch: str, workspace_dir: str, 
         old_commit_lines + new_commit_lines + trailing_lines
 
     if dry_run:
-        print(f"Would update changelist {changelist_nr} with description:")
-        print('\n'.join(new_description_lines))
+        log.info(f"Would update changelist {changelist_nr} with description:")
+        log.info('\n'.join(new_description_lines))
         return
 
     # Replace description in spec and submit
@@ -422,11 +423,11 @@ def add_review_keyword_to_changelist(changelist: str, workspace_dir: str, dry_ru
 
     # Check if #review is already in the description
     if any('#review' in line for line in lines[desc_start:desc_end]):
-        print(f'Changelist {changelist} already has #review keyword')
+        log.info(f'Changelist {changelist} already has #review keyword')
         return
 
     if dry_run:
-        print(f"Would add #review keyword to changelist {changelist}")
+        log.info(f"Would add #review keyword to changelist {changelist}")
         return
 
     # Insert #review at the end of the description, preceded by a blank line

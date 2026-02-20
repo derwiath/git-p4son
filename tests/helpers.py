@@ -3,18 +3,20 @@
 from git_p4son.common import RunResult
 
 
-def make_run_result(returncode=0, stdout=None, stderr=None):
+def make_run_result(returncode=0, stdout=None, stderr=None, elapsed=None):
     """Factory for RunResult objects.
 
     Args:
         returncode: Process return code (default 0).
         stdout: List of stdout lines (default empty).
         stderr: List of stderr lines (default empty).
+        elapsed: Optional timedelta for command duration.
     """
     return RunResult(
         returncode=returncode,
         stdout=stdout if stdout is not None else [],
         stderr=stderr if stderr is not None else [],
+        elapsed=elapsed,
     )
 
 

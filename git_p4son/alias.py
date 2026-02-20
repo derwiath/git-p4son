@@ -3,12 +3,12 @@ Alias command implementation for git-p4son.
 """
 
 import argparse
-import sys
 from .changelist_store import (
     save_changelist_alias,
     list_changelist_aliases,
     delete_changelist_alias,
 )
+from .log import log
 
 
 def alias_list_command(args: argparse.Namespace) -> int:
@@ -25,11 +25,11 @@ def alias_list_command(args: argparse.Namespace) -> int:
 
     aliases = list_changelist_aliases(workspace_dir)
     if not aliases:
-        print('No aliases defined')
+        log.info('No aliases defined')
         return 0
 
     for name, changelist in aliases:
-        print(f'{name} -> {changelist}')
+        log.info(f'{name} -> {changelist}')
 
     return 0
 
@@ -47,14 +47,14 @@ def alias_set_command(args: argparse.Namespace) -> int:
     workspace_dir = args.workspace_dir
 
     if not args.changelist.isdigit():
-        print(f'Invalid changelist number: {args.changelist}', file=sys.stderr)
+        log.error(f'Invalid changelist number: {args.changelist}')
         return 1
 
     if not save_changelist_alias(args.alias, args.changelist,
                                  workspace_dir, force=args.force):
         return 1
 
-    print(f'Saved alias "{args.alias}" -> {args.changelist}')
+    log.detail('alias', f'{args.alias} -> {args.changelist}')
     return 0
 
 
@@ -73,7 +73,7 @@ def alias_delete_command(args: argparse.Namespace) -> int:
     if not delete_changelist_alias(args.alias, workspace_dir):
         return 1
 
-    print(f'Deleted alias "{args.alias}"')
+    log.info(f'Deleted alias "{args.alias}"')
     return 0
 
 
@@ -91,13 +91,14 @@ def alias_clean_command(args: argparse.Namespace) -> int:
 
     aliases = list_changelist_aliases(workspace_dir)
     if not aliases:
-        print('No aliases to clean')
+        log.info('No aliases to clean')
         return 0
 
     delete_all = False
     deleted_count = 0
 
     for name, changelist in aliases:
+        # Interactive output stays as print() — it's a prompt-response UI
         print(f'{name} -> {changelist}')
 
         if delete_all:
@@ -156,6 +157,6 @@ def alias_command(args: argparse.Namespace) -> int:
     elif args.alias_action == 'clean':
         return alias_clean_command(args)
     else:
-        print('No alias action specified. Use "git-p4son alias -h" for help.',
-              file=sys.stderr)
+        log.error(
+            'No alias action specified. Use "git-p4son alias -h" for help.')
         return 1

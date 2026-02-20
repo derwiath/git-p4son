@@ -7,7 +7,6 @@ creates a Swarm review.
 
 import argparse
 import os
-import sys
 from .changelist_store import save_changelist_alias
 from .lib import (
     create_changelist,
@@ -15,6 +14,7 @@ from .lib import (
     add_review_keyword_to_changelist,
     p4_shelve_changelist,
 )
+from .log import log
 
 
 def new_command(args: argparse.Namespace) -> int:
@@ -37,35 +37,41 @@ def new_command(args: argparse.Namespace) -> int:
         alias_path = os.path.join(
             workspace_dir, '.git-p4son', 'changelists', args.alias)
         if os.path.exists(alias_path) and not args.force:
-            print(f'Alias "{args.alias}" already exists (use -f/--force to overwrite)',
-                  file=sys.stderr)
+            log.error(
+                f'Alias "{args.alias}" already exists '
+                f'(use -f/--force to overwrite)')
             return 1
 
     # Create new changelist
+    log.heading('Creating changelist')
     changelist = create_changelist(
         args.message, args.base_branch, workspace_dir, dry_run=args.dry_run)
 
     if not args.dry_run:
-        print(f"Created changelist {changelist}")
+        log.detail('created', f'CL {changelist}')
         if args.alias:
             if not save_changelist_alias(args.alias, changelist,
                                          workspace_dir, force=args.force):
                 return 1
-            print(f'Saved alias "{args.alias}" -> {changelist}')
+            log.detail('alias', f'{args.alias} -> {changelist}')
 
     # Open changed files for edit in the new changelist
     if not args.no_edit:
+        log.heading('Opening files for edit')
         open_changes_for_edit(
             changelist, args.base_branch, workspace_dir, args.dry_run)
 
     # Add #review keyword to changelist description
     if args.review:
+        log.heading('Adding review keyword')
         add_review_keyword_to_changelist(
             changelist, workspace_dir, dry_run=args.dry_run)
 
     # Shelve the changelist
     if args.shelve or args.review:
+        log.heading('Shelving')
         p4_shelve_changelist(
             changelist, workspace_dir, dry_run=args.dry_run)
 
+    log.info('Done')
     return 0

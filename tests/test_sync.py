@@ -7,7 +7,6 @@ from unittest import mock
 from git_p4son.common import CommandError, RunError
 from git_p4son.sync import (
     P4SyncOutputProcessor,
-    echo_output_to_stream,
     get_file_count_to_sync,
     get_latest_changelist_affecting_workspace,
     get_writable_files,

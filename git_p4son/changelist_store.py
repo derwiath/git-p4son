@@ -5,7 +5,8 @@ Stores named aliases for changelist numbers in .git-p4son/changelists/<name>.
 """
 
 import os
-import sys
+
+from .log import log
 
 
 RESERVED_KEYWORDS = frozenset({'latest', 'last-synced', 'branch'})
@@ -33,15 +34,15 @@ def save_changelist_alias(name: str, changelist: str, workspace_dir: str, force:
         True on success, False on failure
     """
     if name in RESERVED_KEYWORDS:
-        print(f'Alias name "{name}" is a reserved keyword', file=sys.stderr)
+        log.error(f'Alias name "{name}" is a reserved keyword')
         return False
 
     changelists_dir = _changelists_dir(workspace_dir)
     alias_path = os.path.join(changelists_dir, name)
 
     if os.path.exists(alias_path) and not force:
-        print(f'Alias "{name}" already exists (use -f/--force to overwrite)',
-              file=sys.stderr)
+        log.error(
+            f'Alias "{name}" already exists (use -f/--force to overwrite)')
         return False
 
     os.makedirs(changelists_dir, exist_ok=True)
@@ -66,14 +67,14 @@ def load_changelist_alias(name: str, workspace_dir: str) -> str | None:
     alias_path = os.path.join(_changelists_dir(workspace_dir), name)
 
     if not os.path.exists(alias_path):
-        print(f'No changelist alias found: {name}', file=sys.stderr)
+        log.error(f'No changelist alias found: {name}')
         return None
 
     with open(alias_path, 'r') as f:
         content = f.read().strip()
 
     if not content:
-        print(f'Changelist alias "{name}" is empty', file=sys.stderr)
+        log.error(f'Changelist alias "{name}" is empty')
         return None
 
     return content
@@ -139,7 +140,7 @@ def delete_changelist_alias(name: str, workspace_dir: str) -> bool:
     alias_path = os.path.join(_changelists_dir(workspace_dir), name)
 
     if not os.path.exists(alias_path):
-        print(f'No changelist alias found: {name}', file=sys.stderr)
+        log.error(f'No changelist alias found: {name}')
         return False
 
     os.remove(alias_path)

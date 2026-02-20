@@ -114,6 +114,12 @@ class TestRunResult(unittest.TestCase):
         self.assertEqual(r.returncode, 0)
         self.assertEqual(r.stdout, ['line1'])
         self.assertEqual(r.stderr, ['err1'])
+        self.assertIsNone(r.elapsed)
+
+    def test_elapsed_field(self):
+        from datetime import timedelta
+        r = RunResult(0, [], [], elapsed=timedelta(seconds=1.5))
+        self.assertEqual(r.elapsed, timedelta(seconds=1.5))
 
 
 class TestRun(unittest.TestCase):

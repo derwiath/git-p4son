@@ -4,6 +4,7 @@ List-changes command implementation for git-p4son.
 
 import argparse
 from .common import run
+from .log import log
 
 
 def get_commit_subjects_since(base_branch: str, workspace_dir: str) -> list[str]:
@@ -91,8 +92,8 @@ def list_changes_command(args: argparse.Namespace) -> int:
         args.base_branch, args.workspace_dir)
 
     if description:
-        print(description)
+        log.info(description)
     else:
-        print("No changes found")
+        log.info("No changes found")
 
     return 0

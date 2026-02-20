@@ -12,6 +12,8 @@ from timeit import default_timer as timer
 from datetime import timedelta
 from typing import IO, Callable
 
+from .log import log
+
 
 def get_current_branch(workspace_dir: str) -> str | None:
     """Return the current git branch name, or None on error/detached HEAD."""
@@ -74,10 +76,12 @@ class RunError(CommandError):
 class RunResult:
     """Result of a command execution."""
 
-    def __init__(self, returncode: int, stdout: list[str], stderr: list[str]) -> None:
+    def __init__(self, returncode: int, stdout: list[str], stderr: list[str],
+                 elapsed: timedelta | None = None) -> None:
         self.returncode: int = returncode
         self.stdout: list[str] = stdout
         self.stderr: list[str] = stderr
+        self.elapsed: timedelta | None = elapsed
 
 
 def join_command_line(command: list[str]) -> str:
@@ -104,10 +108,17 @@ def run(command: list[str], cwd: str = '.', dry_run: bool = False,
     Returns:
         RunResult object with returncode, stdout, and stderr
     """
-    print('>', join_command_line(command))
+    log.command(join_command_line(command))
 
     if dry_run:
+        log.end_command()
         return RunResult(0, [], [])
+
+    if input is not None:
+        log.end_command()
+        log.stdin(input)
+    else:
+        log.start_spinner()
 
     start_timestamp = timer()
 
@@ -118,8 +129,9 @@ def run(command: list[str], cwd: str = '.', dry_run: bool = False,
                             input=input)
 
     end_timestamp = timer()
+    elapsed = timedelta(seconds=end_timestamp - start_timestamp)
 
-    print('Elapsed time is', timedelta(seconds=end_timestamp - start_timestamp))
+    log.stop_spinner()
 
     if result.returncode != 0:
         raise RunError(
@@ -128,7 +140,8 @@ def run(command: list[str], cwd: str = '.', dry_run: bool = False,
             stderr=result.stderr.splitlines(),
         )
 
-    return RunResult(result.returncode, result.stdout.splitlines(), result.stderr.splitlines())
+    return RunResult(result.returncode, result.stdout.splitlines(),
+                     result.stderr.splitlines(), elapsed=elapsed)
 
 
 def enqueue_lines(stream: IO[str], output_queue: queue.Queue[str]) -> None:
@@ -151,7 +164,8 @@ def run_with_output(command: list[str], cwd: str = '.', on_output: Callable[...,
     Returns:
         RunResult object with returncode, stdout, and stderr
     """
-    print('>', join_command_line(command))
+    log.command(join_command_line(command))
+    log.start_spinner()
 
     start_timestamp = timer()
 
@@ -225,18 +239,21 @@ def run_with_output(command: list[str], cwd: str = '.', on_output: Callable[...,
                     on_stderr(l)
 
         except KeyboardInterrupt:
-            print("CTRL-C pressed, terminate subprocess")
+            log.stop_spinner()
+            log.error("CTRL-C pressed, terminate subprocess")
             process.terminate()
             try:
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                print("Subprocess did not terminate in time. Forcing kill...")
+                log.error(
+                    "Subprocess did not terminate in time. Forcing kill...")
                 process.kill()
             sys.exit(1)
 
-    end_timestamp = timer()
+    log.stop_spinner()
 
-    print('Elapsed time is', timedelta(seconds=end_timestamp - start_timestamp))
+    end_timestamp = timer()
+    elapsed = timedelta(seconds=end_timestamp - start_timestamp)
 
     if returncode != 0:
         raise RunError(
@@ -245,4 +262,4 @@ def run_with_output(command: list[str], cwd: str = '.', on_output: Callable[...,
             stderr=stderr_lines,
         )
 
-    return RunResult(returncode, stdout_lines, stderr_lines)
+    return RunResult(returncode, stdout_lines, stderr_lines, elapsed=elapsed)

@@ -12,6 +12,7 @@ from .lib import (
     open_changes_for_edit,
     p4_shelve_changelist,
 )
+from .log import log
 
 
 def update_command(args: argparse.Namespace) -> int:
@@ -29,25 +30,31 @@ def update_command(args: argparse.Namespace) -> int:
     """
     workspace_dir = args.workspace_dir
 
+    log.heading('Resolving alias')
     changelist = resolve_changelist(args.changelist, workspace_dir)
     if changelist is None:
         return 1
+    log.detail(args.changelist, f'CL {changelist}')
 
     # Update changelist description
+    log.heading('Updating changelist description')
     update_changelist(
         changelist, args.base_branch, workspace_dir, dry_run=args.dry_run)
 
     if not args.dry_run:
-        print(f"Updated changelist {changelist}")
+        log.info(f'Updated changelist {changelist}')
 
     # Open changed files for edit
     if not args.no_edit:
+        log.heading('Opening files for edit')
         open_changes_for_edit(
             changelist, args.base_branch, workspace_dir, args.dry_run)
 
     # Shelve the changelist
     if args.shelve:
+        log.heading('Shelving')
         p4_shelve_changelist(
             changelist, workspace_dir, dry_run=args.dry_run)
 
+    log.info('Done')
     return 0

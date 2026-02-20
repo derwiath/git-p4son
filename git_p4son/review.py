@@ -9,8 +9,8 @@ import argparse
 import os
 import shlex
 import subprocess
-import sys
 from .common import run
+from .log import log
 
 
 def _reviews_dir(workspace_dir: str) -> str:
@@ -93,25 +93,28 @@ def review_command(args: argparse.Namespace) -> int:
         alias_path = os.path.join(
             workspace_dir, '.git-p4son', 'changelists', args.alias)
         if os.path.exists(alias_path) and not args.force:
-            print(f'Alias "{args.alias}" already exists (use -f/--force to overwrite)',
-                  file=sys.stderr)
+            log.error(
+                f'Alias "{args.alias}" already exists '
+                f'(use -f/--force to overwrite)')
             return 1
 
     # Get commits since base branch
+    log.heading('Finding commits')
     commit_lines = _get_commit_lines(args.base_branch, workspace_dir)
 
     if not commit_lines:
-        print('No commits found since {}'.format(args.base_branch),
-              file=sys.stderr)
+        log.error(f'No commits found since {args.base_branch}')
         return 1
+    log.info(f'{len(commit_lines)} commits since {args.base_branch}')
 
     # Generate the rebase todo
+    log.heading('Generating rebase todo')
     todo_content = _generate_todo(
         commit_lines, args.alias, args.message, args.force)
 
     if args.dry_run:
-        print('Generated rebase todo:')
-        print(todo_content)
+        log.info('Generated rebase todo:')
+        log.info(todo_content)
         return 0
 
     # Write todo to .git-p4son/reviews/todo
@@ -123,6 +126,7 @@ def review_command(args: argparse.Namespace) -> int:
 
     try:
         # Run git rebase -i with our sequence editor
+        log.heading('Running interactive rebase')
         env = os.environ.copy()
         env['GIT_SEQUENCE_EDITOR'] = 'git p4son _sequence-editor'
         result = subprocess.run(
@@ -131,12 +135,12 @@ def review_command(args: argparse.Namespace) -> int:
             env=env,
         )
         if result.returncode != 0:
-            print('\nRebase did not complete successfully.',
-                  file=sys.stderr)
-            print('You can fix any issues and run: git rebase --continue',
-                  file=sys.stderr)
+            log.error('Rebase did not complete successfully.')
+            log.error(
+                'You can fix any issues and run: git rebase --continue')
             return result.returncode
 
+        log.info('Done')
         return 0
     finally:
         # Clean up the todo file
@@ -161,8 +165,7 @@ def sequence_editor_command(args: argparse.Namespace) -> int:
     todo_file = _todo_path(workspace_dir)
 
     if not os.path.exists(todo_file):
-        print('No review todo file found at {}'.format(todo_file),
-              file=sys.stderr)
+        log.error(f'No review todo file found at {todo_file}')
         return 1
 
     # Read the original git todo file to preserve comment lines
@@ -189,8 +192,7 @@ def sequence_editor_command(args: argparse.Namespace) -> int:
         cwd=workspace_dir,
     )
     if result.returncode != 0:
-        print('Failed to resolve editor via git var GIT_EDITOR',
-              file=sys.stderr)
+        log.error('Failed to resolve editor via git var GIT_EDITOR')
         return 1
 
     editor = result.stdout.strip()

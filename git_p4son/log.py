@@ -1,0 +1,111 @@
+"""
+Structured output module for git-p4son.
+
+All user-facing output goes through the module-level `log` singleton.
+This centralises formatting, verbosity filtering, and future color support.
+"""
+
+import sys
+import threading
+from datetime import timedelta
+
+# Heading prefix — single constant, easy to change later.
+HEADING_PREFIX = '#'
+
+# Spinner characters — simple ASCII set.
+_SPINNER_CHARS = '|/-\\'
+_SPINNER_INTERVAL = 0.1  # seconds between frames
+
+
+class Log:
+    """Structured output handler for git-p4son."""
+
+    def __init__(self) -> None:
+        self.verbose_mode: bool = False
+        self._heading_count: int = 0
+        self._spinner_thread: threading.Thread | None = None
+        self._spinner_stop: threading.Event = threading.Event()
+        self._spinner_line: str = ''
+
+    def heading(self, text: str) -> None:
+        """Print a section heading."""
+        if self._heading_count > 0:
+            print()
+        self._heading_count += 1
+        print(f'{HEADING_PREFIX} {text}')
+
+    def command(self, cmd: str) -> None:
+        """Print a subprocess command line."""
+        print(f'> {cmd}', end='', flush=True)
+        self._spinner_line = f'> {cmd}'
+
+    def end_command(self) -> None:
+        """Finish the command line (print newline)."""
+        print()
+
+    def detail(self, key: str, value: object) -> None:
+        """Print a key-value result."""
+        print(f'{key}: {value}')
+
+    def info(self, text: str) -> None:
+        """Print an informational status line."""
+        print(text)
+
+    def verbose(self, text: str) -> None:
+        """Print verbose-only text (suppressed at normal verbosity)."""
+        if self.verbose_mode:
+            print(text)
+
+    def stdin(self, text: str) -> None:
+        """Print stdin input sent to a command (verbose only)."""
+        if not self.verbose_mode:
+            return
+        print('stdin:')
+        for line in text.splitlines():
+            print(f'  {line}')
+
+    def elapsed(self, duration: timedelta) -> None:
+        """Print elapsed time."""
+        print(f'elapsed: {duration}')
+
+    def error(self, text: str) -> None:
+        """Print an error message to stderr."""
+        print(text, file=sys.stderr)
+
+    def fail(self, returncode: int) -> None:
+        """Print a failure message with return code to stderr."""
+        print(f'Failed with return code {returncode}', file=sys.stderr)
+
+    def start_spinner(self) -> None:
+        """Start the spinner at the end of the current command line."""
+        self._spinner_stop.clear()
+        self._spinner_thread = threading.Thread(
+            target=self._spin, daemon=True)
+        self._spinner_thread.start()
+
+    def stop_spinner(self) -> None:
+        """Stop the spinner and reprint the clean command line."""
+        if self._spinner_thread is None:
+            return
+        self._spinner_stop.set()
+        self._spinner_thread.join()
+        self._spinner_thread = None
+        # Clear the spinner character by reprinting the line
+        line = self._spinner_line
+        sys.stdout.write(f'\r{line}')
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+    def _spin(self) -> None:
+        """Background thread: animate the spinner."""
+        idx = 0
+        line = self._spinner_line
+        while not self._spinner_stop.wait(_SPINNER_INTERVAL):
+            char = _SPINNER_CHARS[idx % len(_SPINNER_CHARS)]
+            sys.stdout.write(f'\r{line} {char}')
+            sys.stdout.flush()
+            idx += 1
+
+
+# Module-level singleton, imported everywhere.
+log = Log()
