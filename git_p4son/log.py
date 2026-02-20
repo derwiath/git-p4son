@@ -17,6 +17,7 @@ _YELLOW = '\033[33m'
 _CYAN = '\033[36m'
 _RED = '\033[31m'
 _RESET = '\033[0m'
+_CLEAR_TO_EOL = '\033[K'
 
 
 class Color:
@@ -126,7 +127,7 @@ class Log:
         line = self._spinner_line
         if _use_color(sys.stdout) and line.startswith('> '):
             line = f'{Color.COMMAND}>{_RESET} {line[2:]}'
-        sys.stdout.write(f'\r{line}')
+        sys.stdout.write(f'\r{line}{_CLEAR_TO_EOL}')
         sys.stdout.write('\n')
         sys.stdout.flush()
 
