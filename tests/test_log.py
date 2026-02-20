@@ -1,10 +1,11 @@
 """Tests for git_p4son.log module."""
 
+import sys
 import time
 from datetime import timedelta
 from unittest.mock import patch
 
-from git_p4son.log import Log
+from git_p4son.log import Color, Log
 
 
 class TestHeading:
@@ -110,7 +111,7 @@ class TestError:
         log = Log()
         log.error('something went wrong')
         err = capsys.readouterr().err
-        assert err == 'something went wrong\n'
+        assert err == 'Error: something went wrong\n'
 
     def test_error_not_on_stdout(self, capsys):
         log = Log()
@@ -156,6 +157,7 @@ class TestSpinner:
         # Let spinner run briefly
         time.sleep(0.15)
         with patch('sys.stdout') as mock_stdout:
+            mock_stdout.isatty.return_value = False
             log.stop_spinner()
             # stop_spinner should write the clean line + newline
             calls = mock_stdout.write.call_args_list
@@ -167,3 +169,49 @@ class TestSpinner:
         log.start_spinner()
         assert log._spinner_thread.daemon is True
         log.stop_spinner()
+
+
+class TestColor:
+    """Tests for ANSI color output when isatty returns True."""
+
+    def test_heading_has_color(self, capsys):
+        log = Log()
+        with patch.object(sys.stdout, 'isatty', return_value=True):
+            log.heading('Sync')
+        out = capsys.readouterr().out
+        assert out == f'{Color.HEADING}# Sync{Color.RESET}\n'
+
+    def test_command_has_colored_prompt(self, capsys):
+        log = Log()
+        with patch.object(sys.stdout, 'isatty', return_value=True):
+            log.command('p4 info')
+        out = capsys.readouterr().out
+        assert out == f'{Color.COMMAND}>{Color.RESET} p4 info'
+
+    def test_command_spinner_line_is_plain(self):
+        log = Log()
+        with patch.object(sys.stdout, 'isatty', return_value=True):
+            log.command('p4 sync')
+        assert log._spinner_line == '> p4 sync'
+
+    def test_error_has_colored_prefix(self, capsys):
+        log = Log()
+        with patch.object(sys.stderr, 'isatty', return_value=True):
+            log.error('something broke')
+        err = capsys.readouterr().err
+        assert err == f'{Color.ERROR}Error:{Color.RESET} something broke\n'
+
+    def test_fail_has_colored_prefix(self, capsys):
+        log = Log()
+        with patch.object(sys.stderr, 'isatty', return_value=True):
+            log.fail(1)
+        err = capsys.readouterr().err
+        assert err == f'{Color.FAIL}Failed{Color.RESET} with return code 1\n'
+
+    def test_no_color_without_tty(self, capsys):
+        """Capsys is not a TTY, so no ANSI codes should appear."""
+        log = Log()
+        log.heading('Test')
+        log.command('cmd')
+        out = capsys.readouterr().out
+        assert '\033[' not in out

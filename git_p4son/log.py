@@ -12,6 +12,34 @@ from datetime import timedelta
 # Heading prefix — single constant, easy to change later.
 HEADING_PREFIX = '#'
 
+# ANSI color codes.
+_YELLOW = '\033[33m'
+_CYAN = '\033[36m'
+_RED = '\033[31m'
+_RESET = '\033[0m'
+
+
+class Color:
+    """Semantic color assignments."""
+    HEADING = _YELLOW
+    COMMAND = _CYAN
+    ERROR = _RED
+    FAIL = _RED
+    RESET = _RESET
+
+
+def _use_color(stream) -> bool:
+    """Return True if the stream is a TTY and supports color."""
+    return hasattr(stream, 'isatty') and stream.isatty()
+
+
+def _color(text: str, color: str, stream) -> str:
+    """Wrap text in ANSI color codes if the stream supports color."""
+    if _use_color(stream):
+        return f'{color}{text}{_RESET}'
+    return text
+
+
 # Spinner characters — simple ASCII set.
 _SPINNER_CHARS = '|/-\\'
 _SPINNER_INTERVAL = 0.1  # seconds between frames
@@ -32,11 +60,13 @@ class Log:
         if self._heading_count > 0:
             print()
         self._heading_count += 1
-        print(f'{HEADING_PREFIX} {text}')
+        line = f'{HEADING_PREFIX} {text}'
+        print(_color(line, Color.HEADING, sys.stdout))
 
     def command(self, cmd: str) -> None:
         """Print a subprocess command line."""
-        print(f'> {cmd}', end='', flush=True)
+        prompt = _color('>', Color.COMMAND, sys.stdout)
+        print(f'{prompt} {cmd}', end='', flush=True)
         self._spinner_line = f'> {cmd}'
 
     def end_command(self) -> None:
@@ -70,11 +100,13 @@ class Log:
 
     def error(self, text: str) -> None:
         """Print an error message to stderr."""
-        print(text, file=sys.stderr)
+        prefix = _color('Error:', Color.ERROR, sys.stderr)
+        print(f'{prefix} {text}', file=sys.stderr)
 
     def fail(self, returncode: int) -> None:
         """Print a failure message with return code to stderr."""
-        print(f'Failed with return code {returncode}', file=sys.stderr)
+        failed = _color('Failed', Color.FAIL, sys.stderr)
+        print(f'{failed} with return code {returncode}', file=sys.stderr)
 
     def start_spinner(self) -> None:
         """Start the spinner at the end of the current command line."""
@@ -90,8 +122,10 @@ class Log:
         self._spinner_stop.set()
         self._spinner_thread.join()
         self._spinner_thread = None
-        # Clear the spinner character by reprinting the line
+        # Clear the spinner character by reprinting the line with color
         line = self._spinner_line
+        if _use_color(sys.stdout) and line.startswith('> '):
+            line = f'{Color.COMMAND}>{_RESET} {line[2:]}'
         sys.stdout.write(f'\r{line}')
         sys.stdout.write('\n')
         sys.stdout.flush()
