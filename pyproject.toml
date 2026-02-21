@@ -25,6 +25,9 @@ classifiers = [
 [tool.setuptools.packages.find]
 include = ["git_p4son*"]
 
+[tool.setuptools.package-data]
+git_p4son = ["completions/*"]
+
 [project.scripts]
 git-p4son = "git_p4son.cli:main"
 
