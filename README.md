@@ -18,32 +18,26 @@ that help out with the repetitive and error prone stuff.
 
 ## Installation
 
-Currently, git-p4son must be installed from source. Clone the repository and install:
-
 ```sh
-git clone https://github.com/derwiath/git-p4son.git
-cd git-p4son
-pip install .
+pip install git-p4son
 ```
+
+Requires Python 3.10 or later.
 
 ## Development
 
-To contribute to git-p4son or modify it for your needs, you can install it in development mode:
+To install from source in editable mode:
 
 ```sh
-git clone https://github.com/derwiath/git-p4son.git
+git clone https://github.com/neoboid/git-p4son.git
 cd git-p4son
 pip install -e .
 ```
 
-The `-e` flag installs the package in "editable" mode. Which means that changes
-to the code are immediately available and `git p4son` can be tested right
-away without reinstalling. This is also handy if you want to auto update Git Perforcesson
-whenever you pull from github.
+The `-e` flag installs the package in "editable" mode, meaning changes to the code are immediately available
+without reinstalling. This is also handy if you want to auto-update git-p4son whenever you pull from GitHub.
 
-### Development Requirements
-
-git-p4son only uses Python standard library modules, no additional packages are required.
+git-p4son only uses Python standard library modules — no additional packages are required.
 
 ## Setup
 
@@ -306,24 +300,22 @@ Tab completion is available for both zsh and PowerShell, including commands, fla
 
 ### zsh
 
-Add the `completions/` directory to your `fpath` before `compinit` in `~/.zshrc`:
+Add the following to `~/.zshrc` before `compinit`:
 
 ```zsh
-fpath=(/path/to/git-p4son/completions $fpath)
+fpath=($(git-p4son completion -d zsh) $fpath)
 autoload -Uz compinit && compinit
 ```
 
-This enables completion for both `git p4son <TAB>` and `git-p4son <TAB>`.
-
 ### PowerShell
 
-Dot-source the completion script in your PowerShell profile (`$PROFILE`):
+Add the following to your PowerShell profile (`$PROFILE`):
 
 ```powershell
-. /path/to/git-p4son/completions/git-p4son.ps1
+. $(git-p4son completion powershell)
 ```
 
-This enables completion for both `git p4son <TAB>` and `git-p4son <TAB>`.
+Both enable completion for `git p4son <TAB>` and `git-p4son <TAB>`.
 
 ## Usage Example
 
