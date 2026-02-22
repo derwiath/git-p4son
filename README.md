@@ -41,29 +41,43 @@ git-p4son only uses Python standard library modules — no additional packages a
 
 ## Setup
 
-### Perforce workspace
-* Set clobber flag on your perforce workspace.
-* Sync workspace to a specified changelist
-```sh
-p4 sync //...@123
-```
-  Take note of the changelist number.
+These steps set up git-p4son in an existing Perforce workspace. You only need to do this once.
 
-### Local git repo
-* Initialize a local git repo:
-```sh
-git init
-```
-  It does not have to be in the root of your perforce workspace, you may choose to only
-  keep a part of it in your local git repo.
-* Add a `.gitignore` file and commit.
-  Ideally your ignore file should ignore the same files that is ignored
-  by perforce, as specified by `.p4ignore`.
-* Add all files and commit
-```sh
-git add .
-git commit -m "Initial commit for CL 123"
-```
+1. **Enable clobber on your Perforce workspace.** This allows `p4 sync` to overwrite writable files, which is
+   necessary because git removes the read-only flag on files it touches. Run `p4 client`, find the `Options:` line,
+   and change `noclobber` to `clobber`.
+
+2. **Sync your workspace to a known changelist.** Pick a changelist to use as the starting point for your git
+   history:
+   ```sh
+   p4 sync //...@12345
+   ```
+
+3. **Initialize a git repo.** This can be anywhere inside your Perforce workspace — it doesn't have to be at the
+   root. You may choose to only track a subdirectory:
+   ```sh
+   cd /path/to/your/workspace    # or a subdirectory of it
+   git init
+   ```
+
+4. **Add a `.gitignore` file.** Ideally this should ignore the same files as your `.p4ignore`. A minimal starting
+   point:
+   ```
+   *.obj
+   *.o
+   *.exe
+   *.pdb
+   ```
+
+5. **Create an initial commit.** Include the changelist number in the message for your own reference:
+   ```sh
+   git add .
+   git commit -m "Initial commit at CL 12345"
+   ```
+
+From here, use `git p4son sync latest` to pull new changes from Perforce (this creates a properly tracked sync
+commit) and branch off `main` for local development. See the [Usage Example](#usage-example) below for a typical
+workflow.
 
 ## Usage
 
