@@ -53,3 +53,4 @@ The CLI (`cli.py`) dispatches to command modules, each exposing a `*_command(arg
 ## Git Conventions
 
 - Never mention "Claude" or "Co-Authored-By: Claude" in commit messages.
+- Version bump commits should use the format: `Release git-p4son vX.Y.Z`
