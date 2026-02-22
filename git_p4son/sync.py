@@ -270,6 +270,9 @@ def sync_command(args: argparse.Namespace) -> int:
         log.info('no previous sync found')
 
     if args.changelist.lower() == 'last-synced':
+        if last_changelist is None:
+            log.error('No previous sync found, cannot use "last-synced"')
+            return 1
         log.heading(f'Syncing to CL {last_changelist}')
         if not p4_sync(last_changelist, args.force, workspace_dir):
             log.error('Failed to sync files from perforce')
